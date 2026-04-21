@@ -9,7 +9,7 @@
 ## Install
 
 ```powershell
-npm install -g agenticweb
+npm install -g @jasperdevs/agenticweb
 agenticweb
 ```
 
@@ -25,7 +25,7 @@ Agentic Web starts on `localhost` by default. If port `8787` is busy, it picks t
 <summary>Try without installing</summary>
 
 ```powershell
-npx agenticweb
+npx @jasperdevs/agenticweb
 ```
 
 </details>
