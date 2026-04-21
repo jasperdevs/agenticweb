@@ -7,15 +7,15 @@
     "genweb": "bin/genweb.js"
   },
   "files": [
+    "app",
     "assets",
     "bin",
-    "genweb",
     "README.md"
   ],
   "scripts": {
     "start": "node ./bin/genweb.js",
     "dev": "node ./bin/genweb.js",
-    "check": "node --check bin/genweb.js && node --check genweb/server.js && node --check genweb/lib/config.js && node --check genweb/lib/utils.js && node --check genweb/lib/http.js && node --check genweb/lib/html.js && node --check genweb/lib/prompts.js && node --check genweb/lib/codexLauncher.js && node --check genweb/lib/builtinPages.js && node --check genweb/lib/generator.js && node --check genweb/public/js/state.js && node --check genweb/public/js/api.js && node --check genweb/public/js/frame.js && node --check genweb/public/js/ui.js && node --check genweb/public/js/app.js",
+    "check": "node --check bin/genweb.js && node --check app/server.js && node --check app/lib/config.js && node --check app/lib/utils.js && node --check app/lib/http.js && node --check app/lib/html.js && node --check app/lib/prompts.js && node --check app/lib/codexLauncher.js && node --check app/lib/builtinPages.js && node --check app/lib/generator.js && node --check app/public/js/state.js && node --check app/public/js/api.js && node --check app/public/js/frame.js && node --check app/public/js/ui.js && node --check app/public/js/app.js",
     "pack:dry": "npm pack --dry-run"
   },
   "keywords": [
