@@ -10,7 +10,7 @@ Do not use external assets, CDNs, iframes, trackers, network calls, credential/p
 
 export function makePrompt({ address, history = [] }) {
   const safeHistory = Array.isArray(history)
-    ? history.slice(-4).map(item => String(item).slice(0, 120))
+    ? history.slice(-3).map(item => String(item).slice(0, 96))
     : [];
 
   return `Generate a real page for:
