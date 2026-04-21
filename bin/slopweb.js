@@ -106,6 +106,7 @@ async function startServer(defaults = {}) {
   const skipPicker = hasFlag('--no-picker', '--yes');
   const forceLocal = hasFlag('--local') || hasFlag('--ai-sdk');
   const forceCodex = hasFlag('--codex');
+  const noAutostart = hasFlag('--no-autostart');
   const model = takeFlag('--model', '-m');
   const baseUrl = takeFlag('--base-url');
   const provider = takeFlag('--provider');
@@ -125,7 +126,7 @@ async function startServer(defaults = {}) {
   if (mock) process.env.CODEX_MOCK = '1';
   const explicitGenerator = Boolean(forceLocal || forceCodex || provider || model || baseUrl || mock || process.env.SLOPWEB_PROVIDER || process.env.AI_PROVIDER || process.env.SLOPWEB_BASE_URL || process.env.AI_SDK_BASE_URL);
   if (!explicitGenerator && !skipPicker && process.stdin.isTTY && process.stdout.isTTY && !process.env.CI) {
-    await runLaunchPicker();
+    await runLaunchPicker({ autostart: !noAutostart });
   }
 
   if (lan || host === '0.0.0.0') process.env.SLOPWEB_ALLOW_LAN = '1';
@@ -181,7 +182,57 @@ function openUrl(url) {
   child.unref();
 }
 
-async function runLaunchPicker() {
+function modelChoiceLabel(model) {
+  const state = model.live ? 'running' : 'installed';
+  return `${model.providerName} · ${model.id} (${state})`;
+}
+
+async function waitForJson(url, timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) return true;
+    } catch {}
+    await new Promise(resolve => setTimeout(resolve, 400));
+  }
+  return false;
+}
+
+function originFromBaseUrl(baseUrl) {
+  return String(baseUrl || '').replace(/\/v1\/?$/i, '').replace(/\/+$/, '');
+}
+
+async function startDetectedRuntime(model) {
+  if (model.live) return model;
+  if (!model.runtime) throw new Error(`${model.providerName} is installed, but Slopweb could not find a runtime command to start it.`);
+
+  if (model.providerId === 'ollama') {
+    const child = spawn(model.runtime, ['serve'], { stdio: 'ignore', detached: true });
+    child.unref();
+    const origin = originFromBaseUrl(model.baseUrl);
+    if (!(await waitForJson(`${origin}/api/tags`, 15_000))) {
+      throw new Error('Ollama did not become ready. Start Ollama, then run `slopweb models` again.');
+    }
+    return { ...model, live: true };
+  }
+
+  if (model.providerId === 'llamacpp' && model.filePath) {
+    const port = await choosePort(8080, '127.0.0.1');
+    const baseUrl = `http://127.0.0.1:${port}/v1`;
+    const args = ['--model', model.filePath, '--host', '127.0.0.1', '--port', String(port)];
+    const child = spawn(model.runtime, args, { stdio: 'ignore', detached: true });
+    child.unref();
+    if (!(await waitForJson(`${baseUrl}/models`, 60_000))) {
+      throw new Error(`llama.cpp did not become ready for ${model.filePath}.`);
+    }
+    return { ...model, baseUrl, live: true };
+  }
+
+  throw new Error(`${model.providerName} model is installed, but Slopweb does not know how to start this runtime yet.`);
+}
+
+async function runLaunchPicker(options = {}) {
   const { createInterface } = await import('node:readline/promises');
   const { detectLocalModels, detectInstalledLocalRuntimes, LOCAL_MODELS_CONFIG } = await import('../app/lib/localModels.js');
   const models = await detectLocalModels();
@@ -190,19 +241,18 @@ async function runLaunchPicker() {
 
   const choices = models.slice(0, 9).map(model => ({
     kind: 'local',
-    label: `${model.providerName} · ${model.id}`,
+    label: modelChoiceLabel(model),
     model
   }));
   choices.push({ kind: 'codex', label: 'Codex OAuth' });
   choices.push({ kind: 'manual', label: 'Manual local endpoint' });
-  choices.push({ kind: 'mock', label: 'Demo mode' });
 
   try {
     console.log('\nSlopweb launchpad');
     if (models.length) {
       console.log('Detected local models:');
     } else {
-      console.log('No running local model server detected.');
+      console.log('No local models detected.');
       if (installed.length) console.log(`Installed runtimes: ${installed.map(item => item.name).join(', ')}`);
       console.log(`Custom local providers can live at ${LOCAL_MODELS_CONFIG}`);
     }
@@ -212,20 +262,16 @@ async function runLaunchPicker() {
     const choice = choices[index] || choices[0];
 
     if (choice.kind === 'local') {
+      const model = options.autostart === false ? choice.model : await startDetectedRuntime(choice.model);
       process.env.SLOPWEB_PROVIDER = 'local';
-      process.env.SLOPWEB_BASE_URL = choice.model.baseUrl;
-      process.env.SLOPWEB_MODEL = choice.model.id;
+      process.env.SLOPWEB_BASE_URL = model.baseUrl;
+      process.env.SLOPWEB_MODEL = model.id;
       return;
     }
     if (choice.kind === 'codex') {
       process.env.SLOPWEB_PROVIDER = 'codex';
       return;
     }
-    if (choice.kind === 'mock') {
-      process.env.CODEX_MOCK = '1';
-      return;
-    }
-
     const baseUrl = (await rl.question('OpenAI-compatible base URL [http://localhost:11434/v1]: ')).trim() || 'http://localhost:11434/v1';
     const model = (await rl.question('Model id: ')).trim();
     if (!model) throw new Error('A local model id is required for a manual endpoint.');
@@ -243,12 +289,14 @@ async function listLocalModels() {
   if (models.length) {
     console.log('Local models');
     for (const model of models) {
-      console.log(`  ${model.providerName}\t${model.id}\t${model.baseUrl}`);
+      const state = model.live ? 'running' : 'installed';
+      const location = model.filePath || model.baseUrl;
+      console.log(`  ${model.providerName}\t${model.id}\t${state}\t${location}`);
     }
     return;
   }
 
-  console.log('No running local model servers detected.');
+  console.log('No local models detected.');
   const installed = detectInstalledLocalRuntimes();
   if (installed.length) {
     console.log('Installed runtimes:');

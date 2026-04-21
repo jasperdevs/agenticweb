@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
 export const LOCAL_MODELS_CONFIG = path.join(os.homedir(), '.slopweb', 'models.json');
 
 const DETECT_TIMEOUT_MS = Number(process.env.SLOPWEB_DETECT_TIMEOUT_MS || 700);
+const MAX_MODEL_FILES = 80;
 
 const OPENAI_COMPAT_PROBES = [
   { providerId: 'lmstudio', name: 'LM Studio', baseUrl: process.env.LMSTUDIO_BASE_URL || process.env.LM_STUDIO_BASE_URL || 'http://127.0.0.1:1234/v1' },
@@ -65,7 +66,10 @@ function makeModel(provider, id, extra = {}) {
     id: modelId,
     name: extra.name || modelName(modelId) || modelId,
     baseUrl: openAiBaseUrl(provider.baseUrl),
-    source: extra.source || provider.source || 'detected'
+    source: extra.source || provider.source || 'detected',
+    live: extra.live ?? provider.live ?? true,
+    filePath: extra.filePath || '',
+    runtime: extra.runtime || provider.runtime || ''
   };
 }
 
@@ -119,9 +123,33 @@ export async function readLocalModelsConfig() {
   }
 }
 
+function commandPath(command) {
+  const tool = process.platform === 'win32' ? 'where.exe' : 'command';
+  const args = process.platform === 'win32' ? [command] : ['-v', command];
+  const result = spawnSync(tool, args, { encoding: 'utf8', shell: process.platform !== 'win32' });
+  if (result.status !== 0) return '';
+  return String(result.stdout || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean)[0] || '';
+}
+
+function ollamaOrigin() {
+  return serviceOrigin(process.env.OLLAMA_HOST || 'http://127.0.0.1:11434');
+}
+
+function makeOllamaProvider(source = 'detected', live = true) {
+  const origin = ollamaOrigin();
+  return {
+    providerId: 'ollama',
+    name: 'Ollama',
+    baseUrl: `${origin}/v1`,
+    source,
+    live,
+    runtime: commandPath('ollama')
+  };
+}
+
 async function probeOllama() {
-  const origin = serviceOrigin(process.env.OLLAMA_HOST || 'http://127.0.0.1:11434');
-  const provider = { providerId: 'ollama', name: 'Ollama', baseUrl: `${origin}/v1` };
+  const origin = ollamaOrigin();
+  const provider = makeOllamaProvider('detected', true);
   const json = await fetchJson(urlJoin(origin, '/api/tags'));
   return parseOllamaModels(json, provider);
 }
@@ -130,6 +158,132 @@ async function probeOpenAiProvider(provider) {
   const baseUrl = openAiBaseUrl(provider.baseUrl);
   const json = await fetchJson(urlJoin(baseUrl, '/models'));
   return parseOpenAiModels(json, { ...provider, baseUrl });
+}
+
+function configuredSearchRoots() {
+  const roots = [
+    process.env.SLOPWEB_MODEL_DIRS,
+    path.join(os.homedir(), '.lmstudio', 'models'),
+    path.join(os.homedir(), 'AppData', 'Roaming', 'LM Studio', 'models'),
+    path.join(os.homedir(), 'AppData', 'Local', 'LM Studio', 'models'),
+    path.join(os.homedir(), '.cache', 'lm-studio', 'models'),
+    path.join(os.homedir(), '.cache', 'huggingface', 'hub'),
+    path.join(os.homedir(), 'models'),
+    path.join(os.homedir(), 'Models'),
+    path.join(os.homedir(), 'Downloads')
+  ];
+  return roots
+    .flatMap(value => String(value || '').split(/[;,]/g))
+    .map(value => value.trim())
+    .filter(Boolean);
+}
+
+async function listDirEntries(dir) {
+  try {
+    return await readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
+async function findFilesByExtension(root, extensions, options = {}) {
+  const files = [];
+  const maxDepth = Number(options.maxDepth || 5);
+  const limit = Number(options.limit || MAX_MODEL_FILES);
+  const seen = new Set();
+
+  async function walk(dir, depth) {
+    if (files.length >= limit || depth > maxDepth) return;
+    const normalized = path.resolve(dir).toLowerCase();
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+
+    const entries = await listDirEntries(dir);
+    for (const entry of entries) {
+      if (files.length >= limit) return;
+      if (entry.name.startsWith('.') && depth > 0) continue;
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(fullPath, depth + 1);
+      } else if (entry.isFile() && extensions.includes(path.extname(entry.name).toLowerCase())) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  await walk(root, 0);
+  return files;
+}
+
+async function detectGgufModels() {
+  const command = commandPath('llama-server') || commandPath('llamafile');
+  if (!command) return [];
+  const provider = {
+    providerId: 'llamacpp',
+    name: 'llama.cpp',
+    baseUrl: process.env.LLAMA_CPP_BASE_URL || process.env.LLAMACPP_BASE_URL || 'http://127.0.0.1:8080/v1',
+    source: 'catalog',
+    live: false,
+    runtime: command
+  };
+  const roots = configuredSearchRoots();
+  const batches = await Promise.all(roots.map(root => findFilesByExtension(root, ['.gguf'], { maxDepth: 5, limit: 30 }).catch(() => [])));
+  return batches.flat().filter(file => !/(^|[.\-_])mmproj([.\-_]|$)/i.test(path.basename(file))).slice(0, MAX_MODEL_FILES).map(file => makeModel(provider, path.basename(file, path.extname(file)), {
+    filePath: file,
+    name: path.basename(file, path.extname(file)),
+    source: 'catalog',
+    live: false
+  })).filter(Boolean);
+}
+
+async function detectOllamaCliModels() {
+  const command = commandPath('ollama');
+  if (!command) return [];
+  const result = spawnSync(command, ['list'], { encoding: 'utf8', timeout: 2500 });
+  if (result.status !== 0 || !result.stdout) return [];
+
+  const provider = makeOllamaProvider('cli', true);
+  return String(result.stdout)
+    .split(/\r?\n/)
+    .slice(1)
+    .map(line => line.trim().split(/\s+/)[0])
+    .filter(name => name && !/^(name|id)$/i.test(name))
+    .map(name => makeModel(provider, name, { source: 'cli', live: true }))
+    .filter(Boolean);
+}
+
+async function findOllamaManifestFiles() {
+  const manifestsRoot = path.join(os.homedir(), '.ollama', 'models', 'manifests');
+  return findFilesByExtension(manifestsRoot, [''], { maxDepth: 6, limit: MAX_MODEL_FILES });
+}
+
+function modelIdFromOllamaManifest(file) {
+  const parts = file.split(/[\\/]+/);
+  const manifestsIndex = parts.findIndex(part => part === 'manifests');
+  if (manifestsIndex < 0 || parts.length < manifestsIndex + 5) return '';
+  const after = parts.slice(manifestsIndex + 2);
+  const tag = after.pop();
+  const model = after.pop();
+  const namespace = after.pop();
+  if (!model || !tag) return '';
+  return namespace && namespace !== 'library' ? `${namespace}/${model}:${tag}` : `${model}:${tag}`;
+}
+
+async function detectOllamaManifests() {
+  const provider = makeOllamaProvider('catalog', false);
+  const files = await findOllamaManifestFiles();
+  return files
+    .map(file => makeModel(provider, modelIdFromOllamaManifest(file), { source: 'catalog', live: false, runtime: provider.runtime }))
+    .filter(Boolean);
+}
+
+async function detectModelCatalog() {
+  const [ollamaCli, ollamaManifests, ggufModels] = await Promise.all([
+    detectOllamaCliModels().catch(() => []),
+    detectOllamaManifests().catch(() => []),
+    detectGgufModels().catch(() => [])
+  ]);
+  return [...ollamaCli, ...ollamaManifests, ...ggufModels];
 }
 
 export async function detectLocalModels() {
@@ -146,8 +300,11 @@ export async function detectLocalModels() {
     probes.push(probeOpenAiProvider(probe).catch(() => []));
   }
 
-  const detected = (await Promise.all(probes)).flat();
-  return dedupeModels([...configuredModels, ...detected]);
+  const [detected, catalog] = await Promise.all([
+    Promise.all(probes).then(results => results.flat()),
+    detectModelCatalog()
+  ]);
+  return dedupeModels([...configuredModels, ...detected, ...catalog]);
 }
 
 function modelMatches(model, requested) {
@@ -186,14 +343,6 @@ export async function resolveLocalModel(options = {}) {
 
   const models = await detectLocalModels();
   return preferredModel(models, requestedModel);
-}
-
-function commandPath(command) {
-  const tool = process.platform === 'win32' ? 'where.exe' : 'command';
-  const args = process.platform === 'win32' ? [command] : ['-v', command];
-  const result = spawnSync(tool, args, { encoding: 'utf8', shell: process.platform !== 'win32' });
-  if (result.status !== 0) return '';
-  return String(result.stdout || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean)[0] || '';
 }
 
 export function detectInstalledLocalRuntimes() {

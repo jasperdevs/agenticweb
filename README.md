@@ -133,7 +133,7 @@ $env:SLOPWEB_MODEL="llama3.2"
 slopweb
 ```
 
-Auto-detection checks Ollama, LM Studio, llama.cpp/llamafile, vLLM, SGLang, Jan, text-generation-webui, and KoboldCpp. Custom local providers can be added in `%USERPROFILE%\.slopweb\models.json`.
+Auto-detection checks running Ollama, LM Studio, llama.cpp/llamafile, vLLM, SGLang, Jan, text-generation-webui, and KoboldCpp servers. It also scans installed Ollama manifests, LM Studio models, Hugging Face cache, and local GGUF model folders. Custom local providers can be added in `%USERPROFILE%\.slopweb\models.json`.
 
 </details>
 
