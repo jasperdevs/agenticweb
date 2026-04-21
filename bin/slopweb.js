@@ -230,6 +230,10 @@ function statusMarker(live) {
   return live ? color('●', '34;197;94') : color('●', '239;68;68');
 }
 
+function codexChoiceLabel(status) {
+  return `${statusMarker(Boolean(status?.connected))} Codex OAuth (${status?.connected ? 'connected' : 'not connected'})`;
+}
+
 async function waitForJson(url, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -279,12 +283,13 @@ function clearInteractiveScreen() {
   if (process.stdout.isTTY) process.stdout.write('\x1b[2J\x1b[H');
 }
 
-function writeInteractiveFrame(text) {
+function writeInteractiveFrame(text, cursorPosition = null) {
   if (!process.stdout.isTTY) {
     process.stdout.write(`${text}\n`);
     return;
   }
   process.stdout.write(`\x1b[H${text}\x1b[J`);
+  if (cursorPosition) process.stdout.write(`\x1b[${cursorPosition.row};${cursorPosition.column}H\x1b[?25h`);
 }
 
 function enterInteractiveScreen() {
@@ -304,9 +309,17 @@ function renderInputBox(value = '') {
   const top = `╭${'─'.repeat(width)}╮`;
   const bottom = `╰${'─'.repeat(width)}╯`;
   const visible = [...String(value || '')].slice(-Math.max(0, width - 5)).join('');
-  const cursor = supportsColor() ? '\x1b[5m \x1b[0m' : '_';
-  const content = `> ${visible}${cursor}`.padEnd(Math.max(0, width - 2), ' ');
+  const content = `> ${visible}`.padEnd(Math.max(0, width - 2), ' ');
   return `${top}\n│ ${content} │\n${bottom}`;
+}
+
+function inputBoxWidth() {
+  return Math.min(78, Math.max(42, Number(process.stdout.columns || 80) - 6));
+}
+
+function inputCursorColumn(value = '') {
+  const visibleChars = [...String(value || '')].slice(-Math.max(0, inputBoxWidth() - 5)).length;
+  return 5 + visibleChars;
 }
 
 function normalizedSearchText(value) {
@@ -341,6 +354,7 @@ function renderLaunchPicker({ choices, index, models, installed, commandBuffer, 
     if (installed.length) lines.push(`Installed runtimes: ${installed.map(item => item.name).join(', ')}`);
   }
   lines.push('', renderInputBox(commandBuffer || ''));
+  const inputTopRow = lines.length - 1;
   if (message) lines.push('', message);
   if (commandBuffer && !visibleChoices.length) lines.push('', `No matches for "${commandBuffer}".`);
   lines.push('');
@@ -349,7 +363,7 @@ function renderLaunchPicker({ choices, index, models, installed, commandBuffer, 
     lines.push(`${pointer} ${choice.label}`);
   });
   lines.push('', 'Type to filter  ↑/↓ select  Enter choose  Esc clear  Ctrl+C quit');
-  writeInteractiveFrame(lines.join('\n'));
+  writeInteractiveFrame(lines.join('\n'), { row: inputTopRow + 2, column: inputCursorColumn(commandBuffer) });
 }
 
 function selectLaunchChoice(state) {
@@ -367,7 +381,6 @@ function selectLaunchChoice(state) {
     };
 
     const render = () => {
-      process.stdout.write('\x1b[?25l');
       const visibleChoices = filteredChoices(state.choices, commandBuffer);
       if (visibleChoices.length && index >= visibleChoices.length) index = visibleChoices.length - 1;
       renderLaunchPicker({ ...state, index, commandBuffer, message });
@@ -469,8 +482,10 @@ function readInputBox({ title, label, value = '', hint = '', message = '' }) {
     const render = () => {
       const lines = [`${renderBanner()}`, '', title];
       if (message) lines.push('', message);
-      lines.push('', renderInputBox(text), color('hint:', '127;127;127') + ` ${label}${hint ? `, e.g. ${hint}` : ''}`, '', 'Enter accept  Esc cancel  Ctrl+C quit');
-      writeInteractiveFrame(lines.join('\n'));
+      lines.push('', renderInputBox(text));
+      const inputTopRow = lines.length - 1;
+      lines.push(color('hint:', '127;127;127') + ` ${label}${hint ? `, e.g. ${hint}` : ''}`, '', 'Enter accept  Esc cancel  Ctrl+C quit');
+      writeInteractiveFrame(lines.join('\n'), { row: inputTopRow + 2, column: inputCursorColumn(text) });
     };
 
     const onData = chunk => {
@@ -553,12 +568,13 @@ async function runLaunchPicker(options = {}) {
     while (true) {
       const models = await detectLocalModels();
       const installed = detectInstalledLocalRuntimes();
+      const codex = await import('../app/lib/codexLauncher.js').then(mod => mod.codexStatus()).catch(() => ({ connected: false }));
       const choices = models.slice(0, 9).map(model => ({
         kind: 'local',
         label: modelChoiceLabel(model),
         model
       }));
-      choices.push({ kind: 'codex', label: 'Codex OAuth' });
+      choices.push({ kind: 'codex', label: codexChoiceLabel(codex) });
       choices.push({ kind: 'manual', label: 'Manual local endpoint' });
 
       if (!models.length && !message) message = `Custom local providers can live at ${LOCAL_MODELS_CONFIG}`;
