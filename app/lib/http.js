@@ -1,6 +1,6 @@
 import { createReadStream, existsSync } from 'node:fs';
 import path from 'node:path';
-import { PUBLIC_DIR } from './config.js';
+import { ASSETS_DIR, PUBLIC_DIR } from './config.js';
 
 const MIME_TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -60,10 +60,18 @@ export async function serveStatic(req, res) {
   }
   if (pathname === '/') pathname = '/index.html';
 
-  const requestedPath = path.resolve(PUBLIC_DIR, `.${pathname}`);
-  const relativePath = path.relative(PUBLIC_DIR, requestedPath);
+  const servingAsset = pathname.startsWith('/assets/');
+  const baseDir = servingAsset ? ASSETS_DIR : PUBLIC_DIR;
+  const localPath = servingAsset ? `.${pathname.replace(/^\/assets/, '')}` : `.${pathname}`;
+  const requestedPath = path.resolve(baseDir, localPath);
+  const relativePath = path.relative(baseDir, requestedPath);
   if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
     sendText(res, 403, 'Forbidden');
+    return;
+  }
+
+  if (servingAsset && !existsSync(requestedPath)) {
+    sendText(res, 404, 'Not found');
     return;
   }
 

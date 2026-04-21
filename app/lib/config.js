@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 export const ROOT_DIR = path.dirname(path.dirname(__filename));
 export const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
+export const ASSETS_DIR = path.join(ROOT_DIR, '..', 'assets');
 
 export const config = Object.freeze({
   version: process.env.SLOPWEB_VERSION || '1.0.0',

@@ -87,8 +87,10 @@ export function renderTabs({ activate, close }) {
     button.setAttribute('aria-selected', tab.id === state.activeTabId ? 'true' : 'false');
     button.dataset.tabId = tab.id;
 
-    const favicon = document.createElement('span');
+    const favicon = document.createElement('img');
     favicon.className = 'tab-favicon';
+    favicon.src = '/assets/logo.png';
+    favicon.alt = '';
     favicon.setAttribute('aria-hidden', 'true');
 
     const title = document.createElement('span');
