@@ -37,8 +37,12 @@ html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Ari
     }
     return parts.reverse().join('/') + ':' + (element.textContent || '').trim().slice(0, 60);
   };
-  const decorate = () => {
-    const elements = Array.from(preview.querySelectorAll('body,main,section,article,header,footer,nav,aside,div,h1,h2,h3,p,a,button,input,textarea,select,ul,ol,li,table,form,canvas,svg,img')).filter(el => el !== preview);
+  const decoratedSelector = 'body,main,section,article,header,footer,nav,aside,div,h1,h2,h3,p,a,button,input,textarea,select,ul,ol,li,table,form,canvas,svg,img';
+  const decorate = (roots = [preview]) => {
+    const elements = roots.flatMap(root => [
+      ...(root === preview ? [] : [root]),
+      ...root.querySelectorAll(decoratedSelector)
+    ]).filter(el => el !== preview);
     elements.forEach((element, index) => {
       const key = keyFor(element);
       if (seen.has(key)) return;
@@ -59,10 +63,14 @@ html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Ari
       lastStyle = nextStyle;
     }
     if (nextBody === lastBody) return;
-    if (lastBody && nextBody.startsWith(lastBody)) preview.insertAdjacentHTML('beforeend', nextBody.slice(lastBody.length));
-    else preview.innerHTML = nextBody;
+    let decorateRoots = [preview];
+    if (lastBody && nextBody.startsWith(lastBody)) {
+      const start = preview.children.length;
+      preview.insertAdjacentHTML('beforeend', nextBody.slice(lastBody.length));
+      decorateRoots = Array.from(preview.children).slice(start);
+    } else preview.innerHTML = nextBody;
     lastBody = nextBody;
-    decorate();
+    decorate(decorateRoots);
   };
   window.addEventListener('message', event => {
     if (event.source !== parent) return;
