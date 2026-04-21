@@ -50,7 +50,7 @@ function lookupCodexOnPath(commandName = 'codex') {
     ? smallCommand('where.exe', [commandName])
     : smallCommand('which', [commandName]);
   if (result?.status !== 0 || !result.stdout) return [];
-  return sortWindowsCandidates(result.stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
+  return unique(result.stdout.split(/\r?\n/).map(line => line.trim()).filter(Boolean));
 }
 
 function npmGlobalBinDirs() {
@@ -117,6 +117,7 @@ function codexPackageRootsNearBinDir(dir) {
     path.join(dir, 'node_modules', '@openai', 'codex'),
     path.join(dir, '..', 'lib', 'node_modules', '@openai', 'codex'),
     path.join(dir, '..', 'node_modules', '@openai', 'codex'),
+    path.join(ROOT_DIR, '..', 'node_modules', '@openai', 'codex'),
     path.join(ROOT_DIR, 'node_modules', '@openai', 'codex')
   ]);
 }
@@ -178,10 +179,9 @@ function getCodexSearchCandidates(rawCommand) {
     lookupCodexOnPath(command).forEach(add);
   }
 
+  commandCandidatesFromDirectory(path.join(ROOT_DIR, '..', 'node_modules', '.bin')).forEach(add);
   commandCandidatesFromDirectory(path.join(ROOT_DIR, 'node_modules', '.bin')).forEach(add);
   String(process.env.PATH || '').split(path.delimiter).map(stripWrappingQuotes).filter(Boolean).forEach(dir => commandCandidatesFromDirectory(dir).forEach(add));
-  npmGlobalBinDirs().forEach(dir => commandCandidatesFromDirectory(dir).forEach(add));
-  pnpmGlobalBinDirs().forEach(dir => commandCandidatesFromDirectory(dir).forEach(add));
 
   if (process.platform === 'win32') {
     [
@@ -199,7 +199,7 @@ function getCodexSearchCandidates(rawCommand) {
   }
 
   if (!hasPathSeparator(command)) add(command);
-  return sortWindowsCandidates(candidates);
+  return unique(candidates);
 }
 
 function quoteForCmd(value) {
@@ -246,7 +246,8 @@ function makeSpawnSpecForCandidate(candidate, args) {
     try { if (!existsSync(value)) return null; }
     catch { return null; }
 
-    if (process.platform === 'win32' && path.extname(value).toLowerCase() !== '.exe') {
+    const ext = path.extname(value).toLowerCase();
+    if (process.platform === 'win32' && ['.cmd', '.bat', '.ps1'].includes(ext)) {
       const entrypoint = resolveCodexEntrypointNearShim(value);
       if (entrypoint) {
         const spec = specForEntrypoint(entrypoint, args, `Codex npm shim ${value}`);

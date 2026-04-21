@@ -32,13 +32,15 @@ http://localhost:8787
 
 ## Codex OAuth mode
 
-This is the default mode. The app launches your local Codex CLI and uses the same auth store as `codex login`.
+This is the default mode. Agentic Web wraps Codex OAuth directly:
 
 ```powershell
-npm i -g @openai/codex
-codex login
+npx agenticweb login
+npx agenticweb status
 npx agenticweb
 ```
+
+The browser also exposes the same login flow through the Codex button.
 
 ## Optional AI SDK streaming mode
 
