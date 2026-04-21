@@ -11,24 +11,33 @@ slopweb
 
 Press `Ctrl+C` to stop the server.
 
-## Local Models
+<details>
+<summary>Local models</summary>
 
 ```powershell
 slopweb models
 slopweb --base-url http://localhost:11434/v1 --model llama3.2
 ```
 
-## Codex OAuth
+</details>
+
+<details>
+<summary>Codex OAuth</summary>
 
 ```powershell
 slopweb login
 slopweb --codex
 ```
 
-## Source
+</details>
+
+<details>
+<summary>Source</summary>
 
 ```powershell
 pnpm install
 pnpm start
 pnpm run check
 ```
+
+</details>

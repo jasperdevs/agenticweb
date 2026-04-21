@@ -19,7 +19,8 @@ slopweb
 
 Open the printed local URL. Press `Ctrl+C` to stop the server.
 
-## Local Models
+<details>
+<summary>Local models</summary>
 
 Slopweb works with local OpenAI-compatible model servers and detects common local runtimes.
 
@@ -31,14 +32,20 @@ slopweb models
 slopweb --base-url http://localhost:11434/v1 --model llama3.2
 ```
 
-## Codex OAuth
+</details>
+
+<details>
+<summary>Codex OAuth</summary>
 
 ```powershell
 slopweb login
 slopweb --codex
 ```
 
-## CLI
+</details>
+
+<details>
+<summary>CLI options</summary>
 
 ```powershell
 slopweb
@@ -50,7 +57,10 @@ slopweb status
 slopweb doctor
 ```
 
-## From Source
+</details>
+
+<details>
+<summary>Run from source</summary>
 
 ```powershell
 pnpm install
@@ -61,6 +71,11 @@ pnpm start
 pnpm run check
 ```
 
-## License
+</details>
+
+<details>
+<summary>License</summary>
 
 MIT
+
+</details>
