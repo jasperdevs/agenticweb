@@ -38,6 +38,61 @@ html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Ari
     return parts.reverse().join('/') + ':' + (element.textContent || '').trim().slice(0, 60);
   };
   const decoratedSelector = 'body,main,section,article,header,footer,nav,aside,div,h1,h2,h3,p,a,button,input,textarea,select,ul,ol,li,table,form,canvas,svg,img';
+  const morphKey = node => node.nodeType === 1 ? (node.id || node.getAttribute('data-slopweb-key') || '') : '';
+  const compatible = (from, to) => from.nodeType === to.nodeType && (from.nodeType !== 1 || from.tagName === to.tagName);
+  const syncAttrs = (from, to) => {
+    Array.from(from.attributes).forEach(attr => {
+      if (!attr.name.startsWith('data-slopweb') && attr.name !== 'style' && !to.hasAttribute(attr.name)) from.removeAttribute(attr.name);
+    });
+    Array.from(to.attributes).forEach(attr => {
+      if (from.getAttribute(attr.name) !== attr.value) from.setAttribute(attr.name, attr.value);
+    });
+  };
+  const morphNode = (from, to, added) => {
+    if (!compatible(from, to)) {
+      const replacement = to.cloneNode(true);
+      from.replaceWith(replacement);
+      if (replacement.nodeType === 1) added.push(replacement);
+      return replacement;
+    }
+    if (from.nodeType !== 1) {
+      if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue;
+      return from;
+    }
+    syncAttrs(from, to);
+    morphChildren(from, to, added);
+    return from;
+  };
+  const morphChildren = (fromParent, toParent, added = []) => {
+    let from = fromParent.firstChild;
+    Array.from(toParent.childNodes).forEach(to => {
+      let match = null;
+      const key = morphKey(to);
+      if (key) {
+        let scan = from;
+        while (scan && !match) {
+          if (morphKey(scan) === key && compatible(scan, to)) match = scan;
+          scan = scan.nextSibling;
+        }
+      }
+      if (!match && from && compatible(from, to)) match = from;
+      if (match) {
+        if (match !== from) fromParent.insertBefore(match, from);
+        morphNode(match, to, added);
+        from = match.nextSibling;
+      } else {
+        const node = to.cloneNode(true);
+        fromParent.insertBefore(node, from);
+        if (node.nodeType === 1) added.push(node);
+      }
+    });
+    while (from) {
+      const next = from.nextSibling;
+      from.remove();
+      from = next;
+    }
+    return added;
+  };
   const decorate = (roots = [preview]) => {
     const elements = roots.flatMap(root => [
       ...(root === preview ? [] : [root]),
@@ -68,7 +123,7 @@ html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Ari
       const start = preview.children.length;
       preview.insertAdjacentHTML('beforeend', nextBody.slice(lastBody.length));
       decorateRoots = Array.from(preview.children).slice(start);
-    } else preview.innerHTML = nextBody;
+    } else decorateRoots = morphChildren(preview, doc.body);
     lastBody = nextBody;
     decorate(decorateRoots);
   };
