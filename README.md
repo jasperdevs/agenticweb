@@ -4,7 +4,7 @@
 
 <h1 align="center">Agentic Web</h1>
 
-<p align="center">A new web where every site is generated with AI.</p>
+<p align="center">A local AI browser where synthetic addresses generate static HTML pages.</p>
 
 ## Install
 
@@ -12,7 +12,7 @@
 npx agenticweb
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:8787
@@ -25,61 +25,80 @@ npm install -g agenticweb
 agenticweb
 ```
 
-The app starts on `localhost` by default. LAN access is off unless you opt in with `--lan`.
+Agentic Web starts on `localhost` by default. If port `8787` is busy, it picks the next open port and prints the URL.
 
-If port `8787` is busy, Agentic Web automatically picks the next open port and prints the URL.
+<details>
+<summary>Codex login</summary>
 
-## Codex Login
-
-Agentic Web includes a Codex OAuth wrapper. Run this once to connect:
-
-```powershell
-npx agenticweb login
-```
-
-Check auth status:
-
-```powershell
-npx agenticweb status
-```
-
-Start the browser:
-
-```powershell
-npx agenticweb
-```
-
-For direct AI SDK streaming instead:
-
-```powershell
-$env:OPENAI_API_KEY="your_key_here"
-$env:AI_PROVIDER="ai-sdk"
-npx agenticweb
-```
-
-## CLI Options
+Connect Codex once:
 
 ```powershell
 agenticweb login
+```
+
+Check status:
+
+```powershell
 agenticweb status
+```
+
+Sign out:
+
+```powershell
 agenticweb logout
-agenticweb doctor
+```
+
+</details>
+
+<details>
+<summary>CLI options</summary>
+
+```powershell
+agenticweb
 agenticweb --port 9000
 agenticweb --open
 agenticweb --strict-port
 agenticweb --mock
 agenticweb --lan
+agenticweb doctor
 ```
 
-## Run From Source
+`--lan` exposes the local server on your network. Keep the default for normal local use.
+
+</details>
+
+<details>
+<summary>AI SDK mode</summary>
+
+Use direct model streaming with an API key:
+
+```powershell
+$env:OPENAI_API_KEY="your_key_here"
+$env:AI_PROVIDER="ai-sdk"
+agenticweb
+```
+
+</details>
+
+<details>
+<summary>Run from source</summary>
 
 ```powershell
 npm install
 npm start
 ```
 
-## License
+Run checks:
+
+```powershell
+npm run check
+```
+
+</details>
+
+<details>
+<summary>License</summary>
 
 MIT
 
-This repository is ready to publish as the `agenticweb` npm package, but it has not been published from this repo yet. Until it is published, use the source install flow above.
+</details>
