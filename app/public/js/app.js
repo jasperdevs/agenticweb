@@ -54,8 +54,7 @@ function resetLiveDocument(reason = 'document') {
   els.frame.srcdoc = composeLiveSrcdoc();
 }
 
-function hasOpenRawTextTag(html, tag) {
-  const text = String(html || '').toLowerCase();
+function hasOpenRawTextTag(text, tag) {
   return text.lastIndexOf(`<${tag}`) > text.lastIndexOf(`</${tag}`);
 }
 
@@ -63,7 +62,8 @@ function canRenderLiveHtml(html) {
   const text = String(html || '');
   if (!/<body[\s>]/i.test(text)) return false;
   if (text.lastIndexOf('<') > text.lastIndexOf('>')) return false;
-  return !['style', 'script', 'textarea', 'title'].some(tag => hasOpenRawTextTag(text, tag));
+  const lowerText = text.toLowerCase();
+  return !['style', 'script', 'textarea', 'title'].some(tag => hasOpenRawTextTag(lowerText, tag));
 }
 
 function postLivePreview() {
