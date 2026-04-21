@@ -44,7 +44,8 @@ export async function handlePageStream(req, res) {
   res.writeHead(200, {
     'Content-Type': 'application/x-ndjson; charset=utf-8',
     'Cache-Control': 'no-store',
-    Connection: 'keep-alive'
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
   });
 
   const safeSend = payload => { if (!closed) sendNdjson(res, payload); };
