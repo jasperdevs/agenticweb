@@ -17,6 +17,47 @@ function normalizeInput(value, base = state.entries[state.index]) {
   return `synthetic://search/${encodeURIComponent(raw)}`;
 }
 
+function slashCommandTarget(command, input) {
+  const rest = input.trim();
+  if (['home', 'new'].includes(command)) return 'synthetic://home';
+  if (command === 'help' || command === '?') return 'synthetic://help/slash-commands';
+  if (command === 'news') return 'synthetic://news/world-wire';
+  if (command === 'dashboard' || command === 'dash') return 'synthetic://app/personal-dashboard';
+  if (command === 'game') return 'synthetic://game/neon-maze';
+  if (command === 'search' || command === 's') return `synthetic://search/${encodeURIComponent(rest || 'slopweb')}`;
+  if (command === 'go' || command === 'open') return rest || 'synthetic://home';
+  return '';
+}
+
+function runSlashCommand(value) {
+  const raw = String(value || '').trim();
+  if (!raw.startsWith('/') || raw.startsWith('//')) return false;
+  const [, name = '', rest = ''] = raw.match(/^\/(\S+)?\s*([\s\S]*)$/) || [];
+  const command = name.toLowerCase();
+  if (!command) return false;
+
+  if (command === 'source') {
+    toggleSource();
+    return true;
+  }
+  if (command === 'login') {
+    els.authDialog.showModal();
+    return true;
+  }
+  if (command === 'clear') {
+    clearHistory();
+    return true;
+  }
+
+  const target = slashCommandTarget(command, rest);
+  if (target) {
+    navigate(target);
+    return true;
+  }
+  navigate(`synthetic://search/${encodeURIComponent(raw)}`);
+  return true;
+}
+
 async function checkAuth() {
   try {
     const data = await checkAuthStatus();
@@ -168,7 +209,7 @@ export async function navigate(rawAddress, options = {}) {
     if (authInfo) {
       setStatus('bad', 'Login needed');
       if (!els.authDialog.open) els.authDialog.showModal();
-      els.authLog.textContent = `${authInfo.authMessage || 'Codex login needed.'}\n\nRun: npm i -g @openai/codex\nThen: codex login`;
+      els.authLog.textContent = `${authInfo.authMessage || 'Codex login needed.'}\n\nRun: slopweb login\nThen: slopweb status`;
     }
   } catch (error) {
     if (controller.signal.aborted || serial !== state.navigationSerial) return;
@@ -179,7 +220,7 @@ export async function navigate(rawAddress, options = {}) {
 }
 
 function errorPage(address, message) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Generation error</title><style>:root{color-scheme:light;font-family:Arial,"Segoe UI",Roboto,sans-serif}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;color:#202124}main{width:min(720px,calc(100vw - 40px));border:1px solid #dadce0;border-radius:20px;padding:32px;background:#fff;box-shadow:0 1px 2px rgba(60,64,67,.16),0 8px 28px rgba(60,64,67,.12)}.mark{width:48px;height:48px;border-radius:50%;background:conic-gradient(#4285f4 0 25%,#ea4335 0 50%,#fbbc04 0 75%,#34a853 0);margin-bottom:18px}h1{margin:0 0 10px;font-size:28px;font-weight:500;letter-spacing:-.02em}p{color:#5f6368;line-height:1.55}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}a{display:inline-flex;align-items:center;min-height:38px;padding:0 16px;border-radius:999px;text-decoration:none;font-weight:600}.primary{background:#1a73e8;color:#fff}.secondary{background:#f1f3f4;color:#3c4043}details{margin-top:18px;border:1px solid #edf0f2;border-radius:14px;background:#f8fafd}summary{cursor:pointer;padding:14px 16px;color:#3c4043;font-weight:600}pre{white-space:pre-wrap;margin:0;padding:0 16px 16px;color:#a50e0e;font-size:12px;line-height:1.45;max-height:240px;overflow:auto}</style></head><body><main><div class="mark" aria-hidden="true"></div><h1>Generator hiccup</h1><p><strong>Address:</strong> ${escapeHtml(address)}</p><p>The browser shell is fine. This was an internal page-generation failure. Try reload, or go home and search again.</p><div class="actions"><a class="primary" href="${escapeHtml(address)}">Try again</a><a class="secondary" href="synthetic://home">Go home</a></div><details><summary>Technical details</summary><pre>${escapeHtml(message || 'Unknown generator error.')}</pre></details></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Generation error</title><style>:root{color-scheme:light;font-family:Arial,"Segoe UI",Roboto,sans-serif}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;color:#202124}main{width:min(720px,calc(100vw - 40px));border:1px solid #dadce0;border-radius:20px;padding:32px;background:#fff;box-shadow:0 1px 2px rgba(60,64,67,.16),0 8px 28px rgba(60,64,67,.12)}.mark{width:48px;height:48px;border-radius:50%;background:conic-gradient(#4285f4 0 25%,#ea4335 0 50%,#fbbc04 0 75%,#34a853 0);margin-bottom:18px}h1{margin:0 0 10px;font-size:28px;font-weight:500;letter-spacing:-.02em}p{color:#5f6368;line-height:1.55}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}a{display:inline-flex;align-items:center;min-height:38px;padding:0 16px;border-radius:999px;text-decoration:none;font-weight:600}.primary{background:#1a73e8;color:#fff}.secondary{background:#f1f3f4;color:#3c4043}details{margin-top:18px;border:1px solid #edf0f2;border-radius:14px;background:#f8fafd}summary{cursor:pointer;padding:14px 16px;color:#3c4043;font-weight:600}pre{white-space:pre-wrap;margin:0;padding:0 16px 16px;color:#a50e0e;font-size:12px;line-height:1.45;max-height:240px;overflow:auto}</style></head><body><main><div class="mark" aria-hidden="true"></div><h1>Generator hiccup</h1><p><strong>Address:</strong> ${escapeHtml(address)}</p><p>The shell is fine. This was an internal page-generation failure. Try reload, or go home and search again.</p><div class="actions"><a class="primary" href="${escapeHtml(address)}">Try again</a><a class="secondary" href="synthetic://home">Go home</a></div><details><summary>Technical details</summary><pre>${escapeHtml(message || 'Unknown generator error.')}</pre></details></main></body></html>`;
 }
 
 function escapeHtml(value) {
@@ -192,7 +233,19 @@ function escapeHtml(value) {
 }
 
 els.frame.addEventListener('load', wireFrameNavigation);
-els.navForm.addEventListener('submit', event => { event.preventDefault(); navigate(els.addressInput.value); });
+function clearHistory() {
+  state.entries = [];
+  state.index = -1;
+  saveHistory();
+  renderHistory(navigate);
+  if (els.chromeMenu) els.chromeMenu.open = false;
+  navigate('synthetic://home');
+}
+
+els.navForm.addEventListener('submit', event => {
+  event.preventDefault();
+  if (!runSlashCommand(els.addressInput.value)) navigate(els.addressInput.value);
+});
 els.addressInput.addEventListener('input', updateOmniboxState);
 els.addressInput.addEventListener('focus', () => requestAnimationFrame(() => els.addressInput.select()));
 els.omniboxClear.addEventListener('click', () => { els.addressInput.value = ''; updateOmniboxState(); els.addressInput.focus(); });
@@ -200,7 +253,7 @@ els.backBtn.addEventListener('click', () => { if (state.index > 0) navigate(stat
 els.forwardBtn.addEventListener('click', () => { if (state.index < state.entries.length - 1) navigate(state.entries[state.index + 1], { push: false, index: state.index + 1 }); });
 els.reloadBtn.addEventListener('click', () => { navigate(state.entries[state.index] || els.addressInput.value, { push: false, index: Math.max(state.index, 0) }); });
 els.homeBtn.addEventListener('click', () => navigate('synthetic://home'));
-els.clearBtn.addEventListener('click', () => { state.entries = []; state.index = -1; saveHistory(); renderHistory(navigate); if (els.chromeMenu) els.chromeMenu.open = false; navigate('synthetic://home'); });
+els.clearBtn.addEventListener('click', clearHistory);
 els.connectBtn.addEventListener('click', () => els.authDialog.showModal());
 els.menuFocusAddress?.addEventListener('click', () => { if (els.chromeMenu) els.chromeMenu.open = false; focusAddress(); });
 els.sourceToggle.addEventListener('click', toggleSource);

@@ -42,16 +42,30 @@ npx slopweb status
 npx slopweb
 ```
 
-The app also exposes the same login flow through the Codex button.
+The app also exposes the same login flow through the Codex button. Slopweb uses an existing `codex` command when it finds one, then falls back to `npx @openai/codex`.
 
 ## AI SDK Mode
 
 Set an API key to stream model text directly through the Vercel AI SDK:
 
 ```powershell
+npm install -g slopweb ai @ai-sdk/openai zod
 $env:OPENAI_API_KEY="your_key_here"
 $env:AI_PROVIDER="ai-sdk"
-npx slopweb
+slopweb
+```
+
+## Slash Commands
+
+Type these in the address bar:
+
+```text
+/help
+/search robots making websites
+/go synthetic://news/world-wire
+/source
+/login
+/clear
 ```
 
 ## Notes

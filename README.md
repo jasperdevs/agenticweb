@@ -37,6 +37,8 @@ pnpm dlx slopweb
 <details>
 <summary>Codex login</summary>
 
+Slopweb uses an existing `codex` command when it finds one, then falls back to `npx @openai/codex`.
+
 Connect Codex once:
 
 ```powershell
@@ -62,15 +64,33 @@ slopweb logout
 
 ```powershell
 slopweb
+slopweb open
 slopweb --port 9000
-slopweb --open
+slopweb -p 9000 -o
 slopweb --strict-port
 slopweb --mock
 slopweb --lan
+slopweb health
 slopweb doctor
 ```
 
 `--lan` exposes the local server on your network. Keep the default for normal local use.
+
+</details>
+
+<details>
+<summary>Slash commands</summary>
+
+Type these in the Slopweb address bar:
+
+```text
+/help
+/search robots making websites
+/go synthetic://news/world-wire
+/source
+/login
+/clear
+```
 
 </details>
 
@@ -80,6 +100,7 @@ slopweb doctor
 Use direct model streaming with an API key:
 
 ```powershell
+npm install -g ai @ai-sdk/openai zod
 $env:OPENAI_API_KEY="your_key_here"
 $env:AI_PROVIDER="ai-sdk"
 slopweb

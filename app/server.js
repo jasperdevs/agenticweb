@@ -130,7 +130,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && url.pathname === '/api/health') {
-      sendJson(res, 200, { ok: true, version: '1.3.0', model: config.codexModel, aiSdkModel: config.aiSdkModel, provider: config.aiProvider, mock: config.codexMock });
+      sendJson(res, 200, { ok: true, version: config.version, model: config.codexModel, aiSdkModel: config.aiSdkModel, provider: config.aiProvider, mock: config.codexMock });
       return;
     }
 

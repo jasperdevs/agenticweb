@@ -4,22 +4,28 @@ import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const args = process.argv.slice(2);
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
+const require = createRequire(import.meta.url);
 const VERSION = '1.0.0';
 
-const COMMANDS = new Set(['start', 'login', 'status', 'logout', 'doctor', 'help']);
+const COMMANDS = new Set(['start', 'serve', 'dev', 'open', 'login', 'status', 'logout', 'doctor', 'health', 'help']);
 
-function hasFlag(name) {
-  const index = args.indexOf(name);
+function flagIndex(names) {
+  return args.findIndex(value => names.includes(value));
+}
+
+function hasFlag(...names) {
+  const index = flagIndex(names);
   if (index === -1) return false;
   args.splice(index, 1);
   return true;
 }
 
-function takeFlag(name) {
-  const index = args.indexOf(name);
+function takeFlag(...names) {
+  const index = flagIndex(names);
   if (index === -1) return '';
   const value = args[index + 1] || '';
   args.splice(index, 2);
@@ -31,6 +37,8 @@ function printHelp() {
 
 Usage:
   slopweb [start] [--port 8787] [--host localhost] [--strict-port] [--open]
+  slopweb open [-p 8787]
+  slopweb health [-p 8787]
   slopweb login
   slopweb status
   slopweb logout
@@ -38,9 +46,15 @@ Usage:
 
 Examples:
   slopweb
-  slopweb --port 9000 --open
+  slopweb open --port 9000
   slopweb login
   slopweb status
+
+Inside Slopweb:
+  /help       Show address-bar commands
+  /search q   Generate search results
+  /go addr    Generate any address
+  /source     Toggle live HTML
 
 The server is local-only by default and opens at http://localhost:8787.`);
 }
@@ -68,21 +82,22 @@ if (command === 'help') {
 }
 
 async function main() {
-  if (command === 'start') return startServer();
+  if (['start', 'serve', 'dev', 'open'].includes(command)) return startServer({ open: command === 'open' });
   if (command === 'login') return runCodex(['login', '--device-auth']);
   if (command === 'logout') return runCodex(['logout']);
   if (command === 'status') return showStatus();
   if (command === 'doctor') return runDoctor();
+  if (command === 'health') return checkHealth();
   throw new Error(`Unknown command: ${command}`);
 }
 
-async function startServer() {
-  const requestedPort = Number(takeFlag('--port') || process.env.PORT || 8787);
+async function startServer(defaults = {}) {
+  const requestedPort = Number(takeFlag('--port', '-p') || process.env.PORT || 8787);
   const strictPort = hasFlag('--strict-port');
-  const openBrowser = hasFlag('--open');
+  const openBrowser = hasFlag('--open', '-o') || Boolean(defaults.open);
   const lan = hasFlag('--lan');
   const mock = hasFlag('--mock');
-  const host = takeFlag('--host') || process.env.HOST || (lan ? '0.0.0.0' : 'localhost');
+  const host = takeFlag('--host', '-H') || process.env.HOST || (lan ? '0.0.0.0' : 'localhost');
 
   if (mock) process.env.CODEX_MOCK = '1';
   if (lan || host === '0.0.0.0') process.env.SLOPWEB_ALLOW_LAN = '1';
@@ -98,6 +113,7 @@ async function startServer() {
 
   process.env.PORT = String(port);
   process.env.HOST = host;
+  process.env.SLOPWEB_VERSION = VERSION;
   process.chdir(resolve(rootDir, 'app'));
   await import('../app/server.js');
   if (openBrowser) setTimeout(() => openUrl(`http://${displayHost(host)}:${port}`), 250).unref?.();
@@ -185,12 +201,45 @@ async function showStatus() {
   process.exitCode = status.connected ? 0 : 1;
 }
 
+function canResolve(specifier) {
+  try {
+    require.resolve(specifier, { paths: [rootDir, process.cwd()] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function printAiSdkStatus() {
+  const packages = ['ai', '@ai-sdk/openai', 'zod'];
+  const missing = packages.filter(name => !canResolve(name));
+  if (!missing.length) {
+    console.log('AI SDK packages: installed');
+    return;
+  }
+  console.log('AI SDK packages: not installed');
+  console.log('  Optional. Install only if you want AI_PROVIDER=ai-sdk:');
+  console.log('  npm install -g ai @ai-sdk/openai zod');
+}
+
 async function runDoctor() {
   console.log('Slopweb doctor');
+  console.log(`Version: ${VERSION}`);
   console.log(`Node: ${process.version}`);
   console.log(`Package: ${rootDir}`);
   console.log('Default URL: http://localhost:8787');
+  console.log('Default install: light; Codex is resolved from PATH or npx fallback.');
+  printAiSdkStatus();
   await showStatus();
+}
+
+async function checkHealth() {
+  const port = Number(takeFlag('--port', '-p') || process.env.PORT || 8787);
+  const host = takeFlag('--host', '-H') || process.env.HOST || 'localhost';
+  const url = `http://${displayHost(host)}:${port}/api/health`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Health check failed: ${response.status}`);
+  console.log(JSON.stringify(await response.json(), null, 2));
 }
 
 main().catch(error => {

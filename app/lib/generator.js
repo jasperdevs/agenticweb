@@ -178,7 +178,7 @@ async function streamAiSdkRawHtml({ address, history, safeSend, closedRef, signa
     ai = await import('ai');
     openaiProvider = await import('@ai-sdk/openai');
   } catch (error) {
-    throw new Error(`Vercel AI SDK streaming packages are not installed. Run npm install. Details: ${error.message}`);
+    throw new Error(`Vercel AI SDK streaming packages are not installed. Install ai, @ai-sdk/openai, and zod, or set AI_PROVIDER=codex. Details: ${error.message}`);
   }
 
   const { streamText } = ai;
@@ -225,7 +225,7 @@ async function generatePageWithAiSdk({ address, history }) {
     openaiProvider = await import('@ai-sdk/openai');
     zod = await import('zod');
   } catch (error) {
-    throw new Error(`Vercel AI SDK packages are not installed. Run npm install, or set AI_PROVIDER=codex. Details: ${error.message}`);
+    throw new Error(`Vercel AI SDK packages are not installed. Install ai, @ai-sdk/openai, and zod, or set AI_PROVIDER=codex. Details: ${error.message}`);
   }
 
   const { generateObject } = ai;

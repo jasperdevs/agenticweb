@@ -5,7 +5,7 @@ export async function checkAuthStatus() {
 }
 
 export async function readNdjsonStream(response, onEvent) {
-  if (!response.body) throw new Error('Streaming is not supported in this browser.');
+  if (!response.body) throw new Error('Streaming is not supported in this client.');
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';

@@ -46,6 +46,7 @@
               <button type="button" data-jump="synthetic://home"><span>New tab</span><kbd>Ctrl+T</kbd></button>
               <button type="button" id="menuFocusAddress"><span>Focus address</span><kbd>Ctrl+L</kbd></button>
               <button type="button" id="menuToggleSource"><span>Toggle source rail</span></button>
+              <button type="button" data-jump="synthetic://help/slash-commands"><span>Slash commands</span></button>
             </section>
             <section class="menu-section">
               <h2>Generate</h2>
@@ -66,6 +67,7 @@
         <button type="button" data-jump="synthetic://news/world-wire"><span class="bm-icon news-bm"></span>News</button>
         <button type="button" data-jump="synthetic://app/personal-dashboard"><span class="bm-icon dash-bm"></span>Dashboard</button>
         <button type="button" data-jump="synthetic://game/neon-maze"><span class="bm-icon game-bm"></span>Game</button>
+        <button type="button" data-jump="synthetic://help/slash-commands"><span class="bm-icon help-bm"></span>Commands</button>
         <span class="bookmark-spacer"></span><span class="mode-chip">static HTML</span><span class="mode-chip">no generated JS</span>
       </section>
     </header>
@@ -89,7 +91,7 @@
     <form method="dialog" class="dialog-card">
       <header><div><p class="dialog-eyebrow">Local OAuth</p><h2>Connect Codex</h2></div><button class="chrome-icon dialog-close" value="close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.4 5.7 5.6 5.6 5.6-5.6.7.7-5.6 5.6 5.6 5.6-.7.7-5.6-5.6-5.6 5.6-.7-.7 5.6-5.6-5.6-5.6z"/></svg></button></header>
       <p>This app uses your local Codex CLI. Your OAuth token stays in your Codex credential store, not inside this HTML shell.</p>
-      <div class="command-box"><code>npm i -g @openai/codex</code><code>codex login</code><code>npm start</code></div>
+      <div class="command-box"><code>slopweb login</code><code>codex login</code><code>slopweb status</code></div>
       <button id="startDeviceLoginBtn" class="dialog-primary" type="button">Start device OAuth</button>
       <pre id="authLog" class="auth-log">No login started yet.</pre>
     </form>

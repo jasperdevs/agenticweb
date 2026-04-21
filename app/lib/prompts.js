@@ -8,7 +8,7 @@ export function makePrompt({ address, history = [] }) {
   return `You are the raw HTML page compiler for a local app called Slopweb.
 
 Task:
-Generate one complete, original, static HTML document for this synthetic browser address:
+Generate one complete, original, static HTML document for this Slopweb address:
 ${address}
 
 Rules:
@@ -19,7 +19,7 @@ Rules:
 - Use semantic HTML and inline CSS in one <style> tag only.
 - Do not fetch, embed, or depend on external websites, external CSS, external JS, external images, CDNs, APIs, trackers, fonts, iframes, object tags, embeds, or media.
 - Make the page feel like a real browsable page for the address, but do not clone exact copyrighted layouts or copy protected text from real sites.
-- All links and form actions must point to plausible synthetic addresses. The browser shell will intercept them and generate the next page.
+- All links and form actions must point to plausible synthetic addresses. Slopweb will intercept them and generate the next page.
 - Use polished static controls: nav, cards, forms, filters, tables, chips, accordions made with <details>, and useful content.
 - Keep it safe: no credential collection, no payment forms, no malware, no hidden network calls, no attempts to escape the iframe, no parent/window manipulation.
 - No reasoning text. No mention that you are an AI unless the requested address is explicitly about AI.

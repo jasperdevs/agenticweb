@@ -6,6 +6,7 @@ export const ROOT_DIR = path.dirname(path.dirname(__filename));
 export const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 
 export const config = Object.freeze({
+  version: process.env.SLOPWEB_VERSION || '1.0.0',
   port: Number(process.env.PORT || 8787),
   allowLan: process.env.SLOPWEB_ALLOW_LAN === '1',
   host: process.env.HOST || (process.env.SLOPWEB_ALLOW_LAN === '1' ? '0.0.0.0' : 'localhost'),

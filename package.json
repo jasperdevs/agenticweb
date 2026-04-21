@@ -17,7 +17,8 @@
     "start": "node ./bin/slopweb.js",
     "dev": "node ./bin/slopweb.js",
     "check": "node --check bin/slopweb.js && node --check app/server.js && node --check app/lib/config.js && node --check app/lib/utils.js && node --check app/lib/http.js && node --check app/lib/html.js && node --check app/lib/prompts.js && node --check app/lib/codexLauncher.js && node --check app/lib/builtinPages.js && node --check app/lib/generator.js && node --check app/public/js/state.js && node --check app/public/js/api.js && node --check app/public/js/frame.js && node --check app/public/js/ui.js && node --check app/public/js/app.js",
-    "pack:dry": "npm pack --dry-run"
+    "pack:dry": "npm pack --dry-run",
+    "prepublishOnly": "npm run check"
   },
   "keywords": [
     "ai",
@@ -40,11 +41,5 @@
   },
   "engines": {
     "node": ">=18.17"
-  },
-  "optionalDependencies": {
-    "@openai/codex": "0.122.0",
-    "ai": "6.0.168",
-    "@ai-sdk/openai": "3.0.53",
-    "zod": "4.3.6"
   }
 }
