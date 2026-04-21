@@ -1,0 +1,20 @@
+{
+  "name": "codegen-browser",
+  "version": "1.3.0",
+  "description": "A local browser shell where every page is generated as static HTML.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check lib/config.js && node --check lib/utils.js && node --check lib/http.js && node --check lib/html.js && node --check lib/prompts.js && node --check lib/codexLauncher.js && node --check lib/builtinPages.js && node --check lib/generator.js && node --check public/js/state.js && node --check public/js/api.js && node --check public/js/frame.js && node --check public/js/ui.js && node --check public/js/app.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "optionalDependencies": {
+    "ai": "6.0.168",
+    "@ai-sdk/openai": "3.0.53",
+    "zod": "4.3.6"
+  }
+}

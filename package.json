@@ -1,0 +1,17 @@
+{
+  "name": "agenticweb",
+  "version": "1.0.0",
+  "description": "A new web where every site is generated with AI.",
+  "private": true,
+  "workspaces": [
+    "codegen-browser"
+  ],
+  "scripts": {
+    "start": "npm --workspace codegen-browser start",
+    "dev": "npm --workspace codegen-browser dev",
+    "check": "npm --workspace codegen-browser run check"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
