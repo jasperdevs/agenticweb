@@ -170,7 +170,7 @@ function emitReadyHtml(send, state, force = false) {
 function streamVisibleHtml(send, state) {
   return text => {
     if (!text) return;
-    state.raw += text;
+    state.raw.push(text);
     state.pending += text;
     if (!state.streaming) {
       const startIndex = htmlStartIndex(state.pending);
@@ -197,7 +197,7 @@ async function streamAiSdkRawHtml({ address, history, safeSend, closedRef, signa
   const { streamText, model, label, providerOptions, timeout } = await loadAiSdkModel();
   safeSend({ type: 'status', text: 'Generating page' });
 
-  const state = { raw: '', pending: '', streaming: false };
+  const state = { raw: [], pending: '', streaming: false };
   const push = streamVisibleHtml(safeSend, state);
 
   const result = streamText({
@@ -218,7 +218,7 @@ async function streamAiSdkRawHtml({ address, history, safeSend, closedRef, signa
 
   throwIfAborted(signal);
   flushVisibleHtml(safeSend, state);
-  const page = validateHtmlPagePayload(extractHtmlFromOutput(state.raw), address, label);
+  const page = validateHtmlPagePayload(extractHtmlFromOutput(state.raw.join('')), address, label);
   page.address = address;
   if (!state.streaming) {
     safeSend({ type: 'reset', reason: 'model-final' });
