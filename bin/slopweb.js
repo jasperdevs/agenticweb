@@ -12,6 +12,27 @@ const require = createRequire(import.meta.url);
 const VERSION = '1.0.0';
 
 const COMMANDS = new Set(['start', 'serve', 'dev', 'open', 'login', 'status', 'logout', 'doctor', 'health', 'models', 'help']);
+const BANNER_LINES = [
+  ' #####  #       ####   #####  #   #  ###### ##### ',
+  '#       #      #    #  #    # #   #  #      #    #',
+  ' ####   #      #    #  #####  # # #  #####  ##### ',
+  '     #  #      #    #  #      ## ##  #      #    #',
+  '#####   ######  ####   #      #   #  ###### ##### '
+];
+
+function supportsColor() {
+  return Boolean(process.stdout.isTTY && !process.env.NO_COLOR);
+}
+
+function color(text, code) {
+  return supportsColor() ? `\x1b[${code}m${text}\x1b[0m` : text;
+}
+
+function renderBanner() {
+  return BANNER_LINES
+    .map((line, index) => color(line, index < 3 ? '38;5;205' : '38;5;217'))
+    .join('\n');
+}
 
 function flagIndex(names) {
   return args.findIndex(value => names.includes(value));
@@ -33,7 +54,7 @@ function takeFlag(...names) {
 }
 
 function printHelp() {
-  console.log(`Slopweb
+  console.log(`${renderBanner()}
 
 Usage:
   slopweb [start] [--port 8787] [--host localhost] [--model llama3.2] [--strict-port] [--open]
@@ -248,7 +269,7 @@ async function runLaunchPicker(options = {}) {
   choices.push({ kind: 'manual', label: 'Manual local endpoint' });
 
   try {
-    console.log('\nSlopweb launchpad');
+    console.log(`\n${renderBanner()}\n\nLaunchpad`);
     if (models.length) {
       console.log('Detected local models:');
     } else {
