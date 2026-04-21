@@ -11,6 +11,7 @@ const args = process.argv.slice(2);
 const rootDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const VERSION = readPackageVersion();
+const COLOR_ENABLED = Boolean(process.stdout.isTTY && !process.env.NO_COLOR);
 
 const COMMANDS = new Set(['start', 'serve', 'dev', 'open', 'login', 'status', 'logout', 'doctor', 'health', 'models', 'help']);
 const BANNER_LINES = [
@@ -34,7 +35,7 @@ function readPackageVersion() {
 }
 
 function supportsColor() {
-  return Boolean(process.stdout.isTTY && !process.env.NO_COLOR);
+  return COLOR_ENABLED;
 }
 
 function color(text, rgb) {
