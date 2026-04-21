@@ -31,7 +31,7 @@ Open:
 http://localhost:8787
 ```
 
-The first app is Codegen Browser, a local browser shell where synthetic addresses generate self-contained static HTML pages. By default it binds to `127.0.0.1` and uses your local Codex CLI auth.
+The first app is Codegen Browser, a local browser shell where synthetic addresses generate self-contained static HTML pages. By default it binds to `localhost` and uses your local Codex CLI auth.
 
 The CLI starts on localhost by default:
 

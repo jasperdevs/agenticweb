@@ -17,7 +17,7 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log(`Agentic Web
 
 Usage:
-  agenticweb [--port 8787] [--host 127.0.0.1] [--lan] [--mock]
+  agenticweb [--port 8787] [--host localhost] [--lan] [--mock]
 
 Examples:
   agenticweb
