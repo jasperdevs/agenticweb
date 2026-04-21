@@ -6,6 +6,8 @@ import { config, stripWrappingQuotes, ROOT_DIR } from './config.js';
 import { unique, stripAnsi } from './utils.js';
 
 let resolvedCodexBinCache = null;
+let codexStatusCache = null;
+const CODEX_STATUS_CACHE_MS = 30_000;
 
 function hasPathSeparator(value) {
   return /[\\/]/.test(String(value || ''));
@@ -445,6 +447,7 @@ export async function spawnCapture(command, args, options = {}) {
 
 export async function codexStatus() {
   if (config.codexMock) return { connected: false, mock: true, provider: 'mock', message: 'Mock mode is on. Set CODEX_MOCK=0 or unset it to use Codex.' };
+  if (codexStatusCache && Date.now() - codexStatusCache.createdAt < CODEX_STATUS_CACHE_MS) return codexStatusCache.status;
 
   const resolved = resolveCodexBin(config.codexBin);
   try {
@@ -452,9 +455,11 @@ export async function codexStatus() {
     const rawMessage = (result.stdout || result.stderr || '').trim();
     const hardCommandFailure = result.code !== 0 && isLauncherFailureText(rawMessage);
     const connected = !hardCommandFailure && (result.code === 0 || process.env.CODEX_SKIP_AUTH_CHECK === '1' || hasLocalCodexAuthFile());
-    return { connected, mock: false, provider: 'codex', binary: result.command || resolved.label, foundBinary: resolved.found, message: rawMessage || (connected ? 'Codex is connected.' : 'Codex is not connected.'), code: result.code };
+    const status = { connected, mock: false, provider: 'codex', binary: result.command || resolved.label, foundBinary: resolved.found, message: rawMessage || (connected ? 'Codex is connected.' : 'Codex is not connected.'), code: result.code };
+    codexStatusCache = { createdAt: Date.now(), status };
+    return status;
   } catch (error) {
-    return {
+    const status = {
       connected: false,
       mock: false,
       provider: 'codex',
@@ -465,5 +470,7 @@ export async function codexStatus() {
       attempts: (error.attempts || []).slice(0, 12),
       candidates: unique([...(error.candidates || resolved.candidates || []), ...(resolved.specs || [])]).slice(0, 24)
     };
+    codexStatusCache = { createdAt: Date.now(), status };
+    return status;
   }
 }

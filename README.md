@@ -97,7 +97,7 @@ Type these in the Slopweb address bar:
 <details>
 <summary>AI SDK mode</summary>
 
-Use direct model streaming with an API key:
+Use direct model output with an API key:
 
 ```powershell
 npm install -g ai @ai-sdk/openai zod

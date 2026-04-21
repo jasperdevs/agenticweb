@@ -57,11 +57,11 @@ export async function handlePageStream(req, res) {
   };
 
   try {
-    safeSend({ type: 'start', address, mode: 'live-elements-static-html', model: config.codexModel });
+    safeSend({ type: 'start', address, mode: 'self-contained-html', model: config.codexModel });
 
     const builtInPage = makeBuiltInPage(address);
     if (builtInPage) {
-      const page = await reveal(builtInPage, { minChunk: 96, maxChunk: 280, delayMs: 8, reason: 'built-in' });
+      const page = await reveal(builtInPage, { minChunk: 160, maxChunk: 620, delayMs: 0, reason: 'built-in' });
       safeSend({ type: 'done', page });
       if (!closed) res.end();
       return;
@@ -70,7 +70,7 @@ export async function handlePageStream(req, res) {
     safeSend({ type: 'status', text: 'Waiting for generated HTML' });
 
     if (config.codexMock) {
-      const page = await reveal(makeMockPage(address), { minChunk: 96, maxChunk: 280, delayMs: 8, reason: 'mock' });
+      const page = await reveal(makeMockPage(address), { minChunk: 160, maxChunk: 620, delayMs: 0, reason: 'mock' });
       safeSend({ type: 'done', page });
       if (!closed) res.end();
       return;
@@ -92,7 +92,7 @@ export async function handlePageStream(req, res) {
 
     const status = await codexStatus();
     if (!status.connected) {
-      const page = await reveal(authFallbackPage(address, history, status), { minChunk: 96, maxChunk: 280, delayMs: 8, reason: 'auth-fallback' });
+      const page = await reveal(authFallbackPage(address, history, status), { minChunk: 160, maxChunk: 620, delayMs: 0, reason: 'auth-fallback' });
       safeSend({ type: 'done', page });
       if (!closed) res.end();
       return;
@@ -118,8 +118,8 @@ export async function handlePageStream(req, res) {
 async function streamHtmlChunks(send, html, options = {}) {
   const text = String(html || '');
   const minChunk = Number(options.minChunk || 64);
-  const maxChunk = Number(options.maxChunk || 220);
-  const delayMs = Number(options.delayMs || 10);
+  const maxChunk = Number(options.maxChunk || 520);
+  const delayMs = Number(options.delayMs || 0);
   const shouldStop = typeof options.shouldStop === 'function' ? options.shouldStop : () => false;
   let index = 0;
   while (index < text.length && !shouldStop()) {
@@ -204,7 +204,7 @@ async function streamAiSdkRawHtml({ address, history, safeSend, closedRef, signa
   page.address = address;
   if (!state.streaming) {
     safeSend({ type: 'reset', reason: 'model-final' });
-    await streamHtmlChunks(safeSend, page.html, { minChunk: 96, maxChunk: 280, delayMs: 8, shouldStop: () => closedRef() });
+    await streamHtmlChunks(safeSend, page.html, { minChunk: 160, maxChunk: 620, delayMs: 0, shouldStop: () => closedRef() });
   }
   return page;
 }
@@ -316,7 +316,7 @@ async function streamCodexRawHtml({ address, history, safeSend, closedRef, signa
   const page = await generateWithCodexCapture({ address, history, signal });
   throwIfAborted(signal);
   safeSend({ type: 'reset', reason: 'codex-final' });
-  await streamHtmlChunks(safeSend, page.html, { minChunk: 96, maxChunk: 280, delayMs: 8, shouldStop: () => closedRef() });
+  await streamHtmlChunks(safeSend, page.html, { minChunk: 160, maxChunk: 620, delayMs: 0, shouldStop: () => closedRef() });
   return page;
 }
 

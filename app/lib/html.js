@@ -11,9 +11,6 @@ export function normalizeAddress(address) {
 
 export function sanitizeGeneratedHtml(html) {
   let cleaned = String(html || '');
-  cleaned = cleaned.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '');
-  cleaned = cleaned.replace(/<script\b[^>]*\/?\s*>/gi, '');
-  cleaned = cleaned.replace(/\s+on[a-z][a-z0-9_-]*\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
   cleaned = cleaned.replace(/(href|src|action|formaction)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1="#"');
   cleaned = cleaned.replace(/(href|src|action|formaction)\s*=\s*javascript:[^\s>]+/gi, '$1="#"');
   cleaned = cleaned.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe\s*>/gi, '');
@@ -68,7 +65,7 @@ export function validateHtmlPagePayload(html, address, model = 'generator') {
   const safeHtml = sanitizeGeneratedHtml(html);
   return hardenPagePayload({
     title: titleFromHtml(safeHtml) || 'Generated page',
-    summary: `Generated static HTML page for ${address}.`,
+    summary: `Generated page for ${address}.`,
     html: safeHtml,
     model
   }, address);

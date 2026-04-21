@@ -95,5 +95,4 @@ server.listen(config.port, config.host, () => {
   console.log(`Model: ${config.codexModel}`);
   console.log(`Provider: ${config.aiProvider}`);
   console.log(`Host: ${config.host}${config.allowLan ? ' (LAN enabled)' : ' (local only)'}`);
-  console.log('Live reveal: elements first, raw HTML side rail');
 });

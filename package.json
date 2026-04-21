@@ -25,7 +25,7 @@
     "codex",
     "generated-pages",
     "generated-websites",
-    "static-html"
+    "self-contained-html"
   ],
   "license": "MIT",
   "repository": {

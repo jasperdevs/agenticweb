@@ -15,9 +15,6 @@ export const els = {
   tabList: document.querySelector('#tabList'),
   newTabBtn: document.querySelector('#newTabBtn'),
   frame: document.querySelector('#pageFrame'),
-  liveBadge: document.querySelector('#liveBadge'),
-  liveBadgeText: document.querySelector('#liveBadge b'),
-  elementTrail: document.querySelector('#elementTrail'),
   sourceRail: document.querySelector('#sourceRail'),
   sourceCollapse: document.querySelector('#sourceCollapse'),
   sourceStatus: document.querySelector('#sourceStatus'),
@@ -46,9 +43,7 @@ export function focusAddress() {
 }
 
 export function setLiveMode(active, text = 'assembling elements') {
-  els.liveBadge.classList.add('hidden');
-  els.liveBadgeText.textContent = text;
-  if (els.sourceStatus) els.sourceStatus.textContent = active ? 'receiving' : 'idle';
+  if (els.sourceStatus) els.sourceStatus.textContent = active ? 'building' : 'idle';
 }
 
 export function setSourceOpen(open) {
@@ -112,16 +107,12 @@ export function renderTabs({ activate, close }) {
 
     button.append(favicon, title, closeButton);
     button.addEventListener('click', () => activate(tab.id));
+    button.addEventListener('auxclick', event => {
+      if (event.button !== 1) return;
+      event.preventDefault();
+      close(tab.id);
+    });
     return button;
-  }));
-}
-
-export function renderElementTrail(tags) {
-  const recent = tags.slice(-12);
-  els.elementTrail.replaceChildren(...recent.map(tag => {
-    const chip = document.createElement('span');
-    chip.textContent = tag;
-    return chip;
   }));
 }
 
@@ -149,5 +140,5 @@ export function renderSource(sourceEl, statusEl, rawHtml, maxChars = 80000) {
   const lines = text.split('\n');
   sourceEl.innerHTML = lines.map((line, index) => `<span class="code-line"><span class="line-no">${index + 1}</span><span class="line-code">${highlightLine(line) || ' '}</span></span>`).join('');
   sourceEl.scrollTop = sourceEl.scrollHeight;
-  statusEl.textContent = fullText.length ? `${Math.max(1, Math.round(fullText.length / 1024))}kb` : 'waiting';
+  statusEl.textContent = fullText.length ? `${Math.max(1, Math.round(fullText.length / 1024))}kb` : 'empty';
 }

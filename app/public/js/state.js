@@ -49,7 +49,6 @@ export const state = {
   abortController: null,
   liveBuffer: active.source || active.html,
   liveRenderQueued: false,
-  materializedTags: [],
   sourceOpen: true
 };
 

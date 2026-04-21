@@ -1,7 +1,7 @@
 {
   "name": "slopweb",
   "version": "1.0.0",
-  "description": "A local shell where every page is generated as static HTML.",
+  "description": "A local shell where every page is generated as self-contained HTML.",
   "type": "module",
   "private": true,
   "scripts": {

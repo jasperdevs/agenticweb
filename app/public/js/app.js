@@ -1,14 +1,7 @@
 import { activateTab, activeTab, closeTab, commitActiveTab, createTab, state, saveHistory, updateActiveTabTitle } from './state.js';
 import { checkAuthStatus, readNdjsonStream } from './api.js';
 import { composeSrcdoc } from './frame.js';
-import { els, setStatus, updateOmniboxState, focusAddress, setLiveMode, setSourceOpen, toggleSource, renderHistory, renderTabs, renderElementTrail, renderSource } from './ui.js';
-
-const MATERIALIZED_TAGS = new Set([
-  'header', 'nav', 'main', 'section', 'article', 'aside', 'footer',
-  'h1', 'h2', 'h3', 'p', 'a', 'form', 'input', 'button', 'select',
-  'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'figure', 'figcaption',
-  'details', 'summary', 'div', 'span'
-]);
+import { els, setStatus, updateOmniboxState, focusAddress, setLiveMode, setSourceOpen, toggleSource, renderHistory, renderTabs, renderSource } from './ui.js';
 
 function normalizeInput(value, base = state.entries[state.index]) {
   const raw = String(value || '').trim();
@@ -81,8 +74,6 @@ async function checkAuth() {
 function resetLiveDocument(reason = 'document') {
   state.liveBuffer = '';
   state.liveRenderQueued = false;
-  state.materializedTags = [];
-  renderElementTrail([]);
   els.sourceStatus.textContent = 'waiting';
   renderSource(els.liveSource, els.sourceStatus, '');
   setLiveMode(true, reason === 'model' || reason === 'codex-final' ? 'receiving html' : 'waiting');
@@ -101,9 +92,7 @@ function scheduleLiveRender() {
 function appendLiveHtml(chunk) {
   if (!chunk) return;
   state.liveBuffer += chunk;
-  recordMaterializedElements(chunk);
   renderSource(els.liveSource, els.sourceStatus, state.liveBuffer);
-  renderElementTrail(state.materializedTags);
   scheduleLiveRender();
 }
 
@@ -120,16 +109,6 @@ function beginLiveHtml(address) {
 function finishLiveHtml() {
   setLiveMode(false);
   els.sourceStatus.textContent = state.liveBuffer ? 'done' : 'idle';
-}
-
-function recordMaterializedElements(chunk) {
-  const pattern = /<([a-z][a-z0-9-]*)\b(?![^>]*\/>)/gi;
-  for (const match of String(chunk || '').matchAll(pattern)) {
-    const tag = match[1].toLowerCase();
-    if (!MATERIALIZED_TAGS.has(tag)) continue;
-    state.materializedTags.push(tag);
-  }
-  if (state.materializedTags.length > 36) state.materializedTags = state.materializedTags.slice(-36);
 }
 
 function wireFrameNavigation() {
@@ -168,6 +147,13 @@ function wireFrameNavigation() {
     }
   });
 }
+
+window.addEventListener('message', event => {
+  if (event.source !== els.frame.contentWindow) return;
+  if (event.data?.type !== 'slopweb:navigate') return;
+  const next = normalizeInput(event.data.href, state.entries[state.index]);
+  if (next) navigate(next);
+});
 
 function renderFinalPage(page) {
   document.title = `${page.title || 'Generated page'} · Slopweb`;
@@ -285,7 +271,6 @@ function renderActiveTab() {
   renderHistory(navigate);
   updateOmniboxState();
   renderSource(els.liveSource, els.sourceStatus, state.liveBuffer);
-  renderElementTrail([]);
   if (state.currentHtml) {
     els.frame.srcdoc = composeSrcdoc(state.currentHtml);
     window.setTimeout(wireFrameNavigation, 80);
@@ -322,6 +307,10 @@ els.addressInput.addEventListener('input', updateOmniboxState);
 els.addressInput.addEventListener('focus', () => requestAnimationFrame(() => els.addressInput.select()));
 els.omniboxClear.addEventListener('click', () => { els.addressInput.value = ''; updateOmniboxState(); els.addressInput.focus(); });
 els.newTabBtn.addEventListener('click', openNewTab);
+els.tabList.addEventListener('dblclick', event => {
+  if (event.target.closest('.tab')) return;
+  openNewTab();
+});
 els.backBtn.addEventListener('click', () => { if (state.index > 0) navigate(state.entries[state.index - 1], { push: false, index: state.index - 1 }); });
 els.forwardBtn.addEventListener('click', () => { if (state.index < state.entries.length - 1) navigate(state.entries[state.index + 1], { push: false, index: state.index + 1 }); });
 els.reloadBtn.addEventListener('click', () => { navigate(state.entries[state.index] || els.addressInput.value, { push: false, index: Math.max(state.index, 0) }); });
@@ -343,6 +332,12 @@ window.addEventListener('keydown', event => {
   if ((event.ctrlKey || event.metaKey) && key === 'l') { event.preventDefault(); focusAddress(); }
   if ((event.ctrlKey || event.metaKey) && key === 'r') { event.preventDefault(); els.reloadBtn.click(); }
   if ((event.ctrlKey || event.metaKey) && key === 't') { event.preventDefault(); openNewTab(); }
+  if ((event.ctrlKey || event.metaKey) && key === 'w') { event.preventDefault(); closeExistingTab(state.activeTabId); }
+  if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(key)) {
+    event.preventDefault();
+    const index = Math.min(Number(key) - 1, state.tabs.length - 1);
+    if (state.tabs[index]) switchTab(state.tabs[index].id);
+  }
   if (event.altKey && event.key === 'ArrowLeft') { event.preventDefault(); els.backBtn.click(); }
   if (event.altKey && event.key === 'ArrowRight') { event.preventDefault(); els.forwardBtn.click(); }
 });

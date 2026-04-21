@@ -1,6 +1,6 @@
 # Slopweb
 
-A local shell where synthetic addresses generate self-contained static HTML pages.
+A local shell where synthetic addresses generate self-contained HTML pages.
 
 ## Install
 
@@ -70,4 +70,4 @@ Type these in the address bar:
 
 ## Notes
 
-Generated pages are forced to static HTML and CSS only. The sanitizer removes script tags, inline event handlers, `javascript:` URLs, and generated iframes. Navigation still works because the parent shell intercepts normal links and forms.
+Generated pages are self-contained HTML files. External network calls, generated iframes, embeds, and `javascript:` URLs are blocked; links and forms route back through the shell.
