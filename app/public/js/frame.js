@@ -58,7 +58,8 @@ html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Ari
       lastStyle = nextStyle;
     }
     if (nextBody === lastBody) return;
-    preview.innerHTML = nextBody;
+    if (lastBody && nextBody.startsWith(lastBody)) preview.insertAdjacentHTML('beforeend', nextBody.slice(lastBody.length));
+    else preview.innerHTML = nextBody;
     lastBody = nextBody;
     decorate();
   };
