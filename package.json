@@ -25,7 +25,18 @@
     "generated-websites",
     "static-html"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasperdevs/agenticweb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jasperdevs/agenticweb/issues"
+  },
+  "homepage": "https://github.com/jasperdevs/agenticweb#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.17"
   },

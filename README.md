@@ -6,13 +6,7 @@
 
 <p align="center">A new web where every site is generated with AI.</p>
 
-## About
-
-Agentic Web is an early project for exploring AI-generated websites: pages, interfaces, and web experiences produced by agents instead of hand-built from scratch.
-
 ## Install
-
-After the package is published to npm, the fastest way to run Agentic Web is:
 
 ```powershell
 npx agenticweb
@@ -34,17 +28,6 @@ agenticweb
 The app starts on `localhost` by default. LAN access is off unless you opt in with `--lan`.
 
 If port `8787` is busy, Agentic Web automatically picks the next open port and prints the URL.
-
-## Run From Source
-
-If you are working from this repository:
-
-```powershell
-npm install
-npm start
-```
-
-The first app is Codegen Browser, a local browser shell where synthetic addresses generate self-contained static HTML pages.
 
 ## Codex Login
 
@@ -79,15 +62,24 @@ npx agenticweb
 ```powershell
 agenticweb login
 agenticweb status
+agenticweb logout
 agenticweb doctor
 agenticweb --port 9000
+agenticweb --open
 agenticweb --strict-port
 agenticweb --mock
 agenticweb --lan
 ```
 
-`agenticweb login` uses bundled Codex when available, then falls back to an existing `codex` command, `npx @openai/codex`, or `npm exec @openai/codex`.
+## Run From Source
 
-## Package Status
+```powershell
+npm install
+npm start
+```
+
+## License
+
+MIT
 
 This repository is ready to publish as the `agenticweb` npm package, but it has not been published from this repo yet. Until it is published, use the source install flow above.

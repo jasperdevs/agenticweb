@@ -4,8 +4,6 @@ A local Chrome-like browser shell where synthetic addresses generate self-contai
 
 ## Install
 
-After the root package is published to npm:
-
 ```powershell
 npx agenticweb
 ```
@@ -30,9 +28,9 @@ Open:
 http://localhost:8787
 ```
 
-## Codex OAuth mode
+## Codex OAuth
 
-This is the default mode. Agentic Web wraps Codex OAuth directly:
+Agentic Web wraps Codex OAuth directly:
 
 ```powershell
 npx agenticweb login
@@ -42,9 +40,9 @@ npx agenticweb
 
 The browser also exposes the same login flow through the Codex button.
 
-## Optional AI SDK streaming mode
+## AI SDK Mode
 
-This path streams model text directly through the Vercel AI SDK. Install the optional deps and set an API key:
+Set an API key to stream model text directly through the Vercel AI SDK:
 
 ```powershell
 $env:OPENAI_API_KEY="your_key_here"
