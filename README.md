@@ -4,7 +4,7 @@
 
 <h1 align="center">Agentic Web</h1>
 
-<p align="center">A local AI browser where synthetic addresses generate static HTML pages.</p>
+<p align="center">A new web where AI generates every page.</p>
 
 ## Install
 
