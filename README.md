@@ -102,17 +102,18 @@ slopweb doctor
 </details>
 
 <details>
-<summary>Slash commands</summary>
+<summary>Terminal slash commands</summary>
 
-Type these in the Slopweb address bar:
+Type these in the terminal launchpad:
 
 ```text
 /help
-/search robots making websites
-/go synthetic://news/world-wire
-/source
+/models
+/status
 /login
-/clear
+/codex
+/manual
+/quit
 ```
 
 </details>

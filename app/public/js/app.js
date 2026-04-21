@@ -21,47 +21,6 @@ function normalizeInput(value, base = state.entries[state.index]) {
   return `synthetic://search/${encodeURIComponent(raw)}`;
 }
 
-function slashCommandTarget(command, input) {
-  const rest = input.trim();
-  if (['home', 'new'].includes(command)) return 'synthetic://home';
-  if (command === 'help' || command === '?') return 'synthetic://search/slash commands';
-  if (command === 'news') return 'synthetic://news/world-wire';
-  if (command === 'dashboard' || command === 'dash') return 'synthetic://app/personal-dashboard';
-  if (command === 'game') return 'synthetic://game/neon-maze';
-  if (command === 'search' || command === 's') return `synthetic://search/${encodeURIComponent(rest || 'slopweb')}`;
-  if (command === 'go' || command === 'open') return rest || 'synthetic://home';
-  return '';
-}
-
-function runSlashCommand(value) {
-  const raw = String(value || '').trim();
-  if (!raw.startsWith('/') || raw.startsWith('//')) return false;
-  const [, name = '', rest = ''] = raw.match(/^\/(\S+)?\s*([\s\S]*)$/) || [];
-  const command = name.toLowerCase();
-  if (!command) return false;
-
-  if (command === 'source') {
-    toggleSource();
-    return true;
-  }
-  if (command === 'login') {
-    showAuthCommands();
-    return true;
-  }
-  if (command === 'clear') {
-    clearHistory();
-    return true;
-  }
-
-  const target = slashCommandTarget(command, rest);
-  if (target) {
-    navigate(target);
-    return true;
-  }
-  navigate(`synthetic://search/${encodeURIComponent(raw)}`);
-  return true;
-}
-
 async function checkAuth() {
   try {
     const data = await checkAuthStatus();
@@ -317,7 +276,7 @@ function openNewTab() {
 
 els.navForm.addEventListener('submit', event => {
   event.preventDefault();
-  if (!runSlashCommand(els.addressInput.value)) navigate(els.addressInput.value);
+  navigate(els.addressInput.value);
 });
 els.addressInput.addEventListener('input', updateOmniboxState);
 els.addressInput.addEventListener('focus', () => requestAnimationFrame(() => els.addressInput.select()));
