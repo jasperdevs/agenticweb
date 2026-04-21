@@ -311,8 +311,8 @@ export function spawnWithSpec(spec, options = {}) {
     shell: false,
     windowsHide: true
   });
-  child.codegenBrowserCommand = spec.label;
-  child.codegenBrowserSpec = spec;
+  child.genwebCommand = spec.label;
+  child.genwebSpec = spec;
   return child;
 }
 

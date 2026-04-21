@@ -9,13 +9,13 @@
   "files": [
     "assets",
     "bin",
-    "codegen-browser",
+    "genweb",
     "README.md"
   ],
   "scripts": {
     "start": "node ./bin/genweb.js",
     "dev": "node ./bin/genweb.js",
-    "check": "node --check bin/genweb.js && node --check codegen-browser/server.js && node --check codegen-browser/lib/config.js && node --check codegen-browser/lib/utils.js && node --check codegen-browser/lib/http.js && node --check codegen-browser/lib/html.js && node --check codegen-browser/lib/prompts.js && node --check codegen-browser/lib/codexLauncher.js && node --check codegen-browser/lib/builtinPages.js && node --check codegen-browser/lib/generator.js && node --check codegen-browser/public/js/state.js && node --check codegen-browser/public/js/api.js && node --check codegen-browser/public/js/frame.js && node --check codegen-browser/public/js/ui.js && node --check codegen-browser/public/js/app.js",
+    "check": "node --check bin/genweb.js && node --check genweb/server.js && node --check genweb/lib/config.js && node --check genweb/lib/utils.js && node --check genweb/lib/http.js && node --check genweb/lib/html.js && node --check genweb/lib/prompts.js && node --check genweb/lib/codexLauncher.js && node --check genweb/lib/builtinPages.js && node --check genweb/lib/generator.js && node --check genweb/public/js/state.js && node --check genweb/public/js/api.js && node --check genweb/public/js/frame.js && node --check genweb/public/js/ui.js && node --check genweb/public/js/app.js",
     "pack:dry": "npm pack --dry-run"
   },
   "keywords": [

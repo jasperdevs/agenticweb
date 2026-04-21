@@ -1,6 +1,6 @@
-const HISTORY_KEY = 'codegen-browser-history';
-const INDEX_KEY = 'codegen-browser-index';
-const SOURCE_OPEN_KEY = 'codegen-browser-source-open';
+const HISTORY_KEY = 'genweb-history';
+const INDEX_KEY = 'genweb-index';
+const SOURCE_OPEN_KEY = 'genweb-source-open';
 
 function readHistory() {
   try {

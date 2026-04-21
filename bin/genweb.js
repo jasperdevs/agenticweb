@@ -85,7 +85,7 @@ async function startServer() {
   const host = takeFlag('--host') || process.env.HOST || (lan ? '0.0.0.0' : 'localhost');
 
   if (mock) process.env.CODEX_MOCK = '1';
-  if (lan || host === '0.0.0.0') process.env.CODEGEN_ALLOW_LAN = '1';
+  if (lan || host === '0.0.0.0') process.env.GENWEB_ALLOW_LAN = '1';
   if (!Number.isInteger(requestedPort) || requestedPort < 1 || requestedPort > 65535) {
     throw new Error(`Invalid port: ${requestedPort}`);
   }
@@ -98,8 +98,8 @@ async function startServer() {
 
   process.env.PORT = String(port);
   process.env.HOST = host;
-  process.chdir(resolve(rootDir, 'codegen-browser'));
-  await import('../codegen-browser/server.js');
+  process.chdir(resolve(rootDir, 'genweb'));
+  await import('../genweb/server.js');
   if (openBrowser) setTimeout(() => openUrl(`http://${displayHost(host)}:${port}`), 250).unref?.();
 }
 
@@ -138,7 +138,7 @@ function openUrl(url) {
 }
 
 async function runCodex(codexArgs) {
-  const { makeCodexSpawnSpecs, spawnWithSpec, isLauncherFailureResult, summarizeAttempts } = await import('../codegen-browser/lib/codexLauncher.js');
+  const { makeCodexSpawnSpecs, spawnWithSpec, isLauncherFailureResult, summarizeAttempts } = await import('../genweb/lib/codexLauncher.js');
   const attempts = [];
 
   for (const spec of makeCodexSpawnSpecs(process.env.CODEX_BIN || 'codex', codexArgs)) {
@@ -176,7 +176,7 @@ function runInteractiveAttempt(spawnWithSpec, spec) {
 }
 
 async function showStatus() {
-  const { codexStatus } = await import('../codegen-browser/lib/codexLauncher.js');
+  const { codexStatus } = await import('../genweb/lib/codexLauncher.js');
   const status = await codexStatus();
   console.log(status.connected ? 'Codex: connected' : 'Codex: not connected');
   if (status.provider) console.log(`Provider: ${status.provider}`);

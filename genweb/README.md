@@ -1,4 +1,4 @@
-# Codegen Browser
+# Genweb
 
 A local Chrome-like browser shell where synthetic addresses generate self-contained static HTML pages.
 
