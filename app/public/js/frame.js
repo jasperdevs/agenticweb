@@ -2,6 +2,65 @@ export function securityMeta() {
   return `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">`;
 }
 
+export function composeLiveSrcdoc() {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${securityMeta()}<style>
+html,body{margin:0;min-height:100%;background:#fff;color:#202124;font-family:Arial,"Segoe UI",Roboto,sans-serif}
+#slopweb-style{display:none}
+#slopweb-preview{min-height:100vh}
+#slopweb-preview:empty:before{content:"";display:block;min-height:100vh;background:#fff}
+#slopweb-preview [data-slopweb-new]{animation:slopweb-reveal .72s cubic-bezier(.2,0,0,1) both;will-change:opacity,transform,filter}
+@keyframes slopweb-reveal{0%{opacity:0;transform:translateY(10px) scale(.985);filter:blur(7px)}60%{opacity:1;filter:blur(0)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){#slopweb-preview [data-slopweb-new]{animation:none}}
+</style></head><body><style id="slopweb-style"></style><main id="slopweb-preview"></main><script>
+(() => {
+  const seen = new Set();
+  const styleEl = document.querySelector('#slopweb-style');
+  const preview = document.querySelector('#slopweb-preview');
+  const complete = html => {
+    let doc = String(html || '');
+    if (!/<body[\\s>]/i.test(doc)) return '';
+    if (!/<\\/body\\s*>/i.test(doc)) doc += '\\n</body>';
+    if (!/<\\/html\\s*>/i.test(doc)) doc += '\\n</html>';
+    return doc;
+  };
+  const keyFor = element => {
+    const parts = [];
+    let node = element;
+    while (node && node !== preview && parts.length < 5) {
+      const parent = node.parentElement;
+      const index = parent ? Array.prototype.indexOf.call(parent.children, node) : 0;
+      parts.push(node.tagName + ':' + index + ':' + (node.id || '') + ':' + (node.className || ''));
+      node = parent;
+    }
+    return parts.reverse().join('/') + ':' + (element.textContent || '').trim().slice(0, 60);
+  };
+  const decorate = () => {
+    const elements = Array.from(preview.querySelectorAll('body,main,section,article,header,footer,nav,aside,div,h1,h2,h3,p,a,button,input,textarea,select,ul,ol,li,table,form,canvas,svg,img')).filter(el => el !== preview);
+    elements.forEach((element, index) => {
+      const key = keyFor(element);
+      if (seen.has(key)) return;
+      seen.add(key);
+      element.dataset.slopwebNew = '';
+      element.style.animationDelay = Math.min(index * 28, 420) + 'ms';
+    });
+  };
+  const render = html => {
+    const full = complete(html);
+    if (!full) return;
+    const doc = new DOMParser().parseFromString(full, 'text/html');
+    doc.querySelectorAll('script,iframe,object,embed,link[rel~="stylesheet" i]').forEach(node => node.remove());
+    styleEl.textContent = Array.from(doc.querySelectorAll('style')).map(node => node.textContent || '').join('\\n');
+    preview.innerHTML = doc.body ? doc.body.innerHTML : '';
+    decorate();
+  };
+  window.addEventListener('message', event => {
+    if (event.source !== parent) return;
+    if (event.data && event.data.type === 'slopweb:preview') render(event.data.html);
+  });
+})();
+</script></body></html>`;
+}
+
 function bridgeScript() {
   return `<script data-slopweb-bridge>
 (() => {

@@ -3,13 +3,14 @@ import { config, shouldTryAiSdk } from './lib/config.js';
 import { sendJson, sendText, readJsonBody, serveStatic } from './lib/http.js';
 import { generatePage, handlePageStream } from './lib/generator.js';
 import { codexStatus } from './lib/codexLauncher.js';
-import { aiSdkStatus } from './lib/aiSdkProvider.js';
+import { aiSdkStatus, warmLocalModel } from './lib/aiSdkProvider.js';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 async function authStatus() {
   if (shouldTryAiSdk()) {
     const local = await aiSdkStatus();
+    if (local.connected) warmLocalModel().catch(() => {});
     if (local.connected || config.aiProvider !== 'auto') return local;
   }
   return codexStatus();
@@ -88,4 +89,5 @@ server.listen(config.port, config.host, () => {
   if (config.aiSdkModel) console.log(`Local model: ${config.aiSdkModel}`);
   if (config.aiSdkBaseUrl) console.log(`AI base URL: ${config.aiSdkBaseUrl}`);
   console.log(`Host: ${config.host}${config.allowLan ? ' (LAN enabled)' : ' (local only)'}`);
+  if (shouldTryAiSdk()) warmLocalModel().catch(() => {});
 });

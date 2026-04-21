@@ -375,7 +375,8 @@ export async function resolveLocalModel(options = {}) {
   }
 
   const models = await detectLocalModels();
-  return preferredModel(models, requestedModel);
+  const candidates = options.requireLive || options.verify ? models.filter(model => model.live) : models;
+  return preferredModel(candidates, requestedModel);
 }
 
 export function detectInstalledLocalRuntimes() {

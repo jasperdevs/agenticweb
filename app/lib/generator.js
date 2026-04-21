@@ -187,6 +187,7 @@ function flushVisibleHtml(send, state) {
 async function streamAiSdkRawHtml({ address, history, safeSend, closedRef, signal }) {
   throwIfAborted(signal);
 
+  safeSend({ type: 'status', text: 'Starting local model' });
   const { streamText, model, label, providerOptions, timeout } = await loadAiSdkModel();
   safeSend({ type: 'status', text: 'Generating page' });
 

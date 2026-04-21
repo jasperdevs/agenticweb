@@ -43,7 +43,7 @@ export function focusAddress() {
 }
 
 export function setLiveMode(active, text = 'assembling elements') {
-  if (els.sourceStatus) els.sourceStatus.textContent = active ? 'building' : 'idle';
+  if (els.sourceStatus) els.sourceStatus.textContent = active ? text : 'idle';
 }
 
 export function setSourceOpen(open) {
@@ -137,7 +137,24 @@ function highlightTagToken(token) {
     .replace(/(\/?&gt;)$/, '<span class="code-bracket">$1</span>');
 }
 
-function highlightLine(line) {
+function highlightCssLine(line) {
+  return escapeHtml(line)
+    .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="code-comment">$1</span>')
+    .replace(/(#(?:[0-9a-f]{3}){1,2}\b)/gi, '<span class="code-color">$1</span>')
+    .replace(/([a-z-]+)(\s*:)/gi, '<span class="code-attr">$1</span><span class="code-bracket">$2</span>')
+    .replace(/(&quot;.*?&quot;|&#039;.*?&#039;)/g, '<span class="code-value">$1</span>');
+}
+
+function highlightScriptLine(line) {
+  return escapeHtml(line)
+    .replace(/(\/\/.*$)/g, '<span class="code-comment">$1</span>')
+    .replace(/(&quot;.*?&quot;|&#039;.*?&#039;|`.*?`)/g, '<span class="code-value">$1</span>')
+    .replace(/\b(const|let|var|function|return|if|else|for|while|await|async|new|class|try|catch|throw|import|export)\b/g, '<span class="code-keyword">$1</span>');
+}
+
+function highlightLine(line, mode = 'html') {
+  if (mode === 'css') return highlightCssLine(line);
+  if (mode === 'script') return highlightScriptLine(line);
   const text = String(line || '');
   const tokenRe = /<!--[\s\S]*?-->|<!doctype[^>]*>|<\/?[a-z][^>]*>/gi;
   let html = '';
@@ -157,7 +174,15 @@ export function renderSource(sourceEl, statusEl, rawHtml, maxChars = 80000) {
     ? `... trimmed ${fullText.length - maxChars} chars ...\n${fullText.slice(-maxChars)}`
     : fullText;
   const lines = text.split('\n');
-  sourceEl.innerHTML = lines.map((line, index) => `<span class="code-line"><span class="line-no">${index + 1}</span><span class="line-code">${highlightLine(line) || ' '}</span></span>`).join('');
+  let mode = 'html';
+  sourceEl.innerHTML = lines.map((line, index) => {
+    const activeMode = mode;
+    const highlighted = highlightLine(line, activeMode) || ' ';
+    if (/<style[\s>]/i.test(line) && !/<\/style\s*>/i.test(line)) mode = 'css';
+    if (/<script[\s>]/i.test(line) && !/<\/script\s*>/i.test(line)) mode = 'script';
+    if (/<\/style\s*>/i.test(line) || /<\/script\s*>/i.test(line)) mode = 'html';
+    return `<span class="code-line"><span class="line-no">${index + 1}</span><span class="line-code">${highlighted}</span></span>`;
+  }).join('');
   sourceEl.scrollTop = sourceEl.scrollHeight;
   statusEl.textContent = fullText.length ? `${Math.max(1, Math.round(fullText.length / 1024))}kb` : 'empty';
 }

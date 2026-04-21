@@ -1,7 +1,11 @@
 import { activateTab, activeTab, closeTab, commitActiveTab, createTab, state, saveHistory, updateActiveTabTitle } from './state.js';
 import { checkAuthStatus, readNdjsonStream } from './api.js';
-import { composeSrcdoc } from './frame.js';
+import { composeLiveSrcdoc, composeSrcdoc } from './frame.js';
 import { els, setStatus, updateOmniboxState, focusAddress, setLiveMode, setSourceOpen, toggleSource, renderHistory, renderTabs, renderSource } from './ui.js';
+
+let liveFrameReady = false;
+let liveFrameTimer = 0;
+let lastLiveFrameHtml = '';
 
 function normalizeInput(value, base = state.entries[state.index]) {
   const raw = String(value || '').trim();
@@ -78,7 +82,17 @@ function resetLiveDocument(reason = 'document') {
   els.sourceStatus.textContent = 'waiting';
   renderSource(els.liveSource, els.sourceStatus, '');
   setLiveMode(true, reason === 'model' || reason === 'codex-final' ? 'receiving html' : 'waiting');
-  els.frame.srcdoc = composeSrcdoc('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Loading</title><style>html,body{margin:0;min-height:100%;background:#fff;font-family:Arial,sans-serif;color:#202124}</style></head><body></body></html>');
+  if (liveFrameTimer) {
+    window.clearTimeout(liveFrameTimer);
+    liveFrameTimer = 0;
+  }
+  liveFrameReady = false;
+  lastLiveFrameHtml = '';
+  els.frame.onload = () => {
+    liveFrameReady = true;
+    postLivePreview();
+  };
+  els.frame.srcdoc = composeLiveSrcdoc();
 }
 
 function hasOpenRawTextTag(html, tag) {
@@ -93,6 +107,21 @@ function canRenderLiveHtml(html) {
   return !['style', 'script', 'textarea', 'title'].some(tag => hasOpenRawTextTag(text, tag));
 }
 
+function postLivePreview() {
+  if (!liveFrameReady || !els.frame.contentWindow || !canRenderLiveHtml(state.liveBuffer)) return;
+  if (state.liveBuffer === lastLiveFrameHtml) return;
+  lastLiveFrameHtml = state.liveBuffer;
+  els.frame.contentWindow.postMessage({ type: 'slopweb:preview', html: state.liveBuffer }, '*');
+}
+
+function scheduleLiveFrameRender() {
+  if (liveFrameTimer) return;
+  liveFrameTimer = window.setTimeout(() => {
+    liveFrameTimer = 0;
+    postLivePreview();
+  }, 180);
+}
+
 function scheduleLiveRender({ source = true, frame = true } = {}) {
   state.sourceRenderQueued ||= source;
   state.liveRenderQueued ||= frame;
@@ -105,7 +134,7 @@ function scheduleLiveRender({ source = true, frame = true } = {}) {
     state.sourceRenderQueued = false;
     state.liveRenderQueued = false;
     if (shouldRenderSource) renderSource(els.liveSource, els.sourceStatus, state.liveBuffer);
-    if (shouldRenderFrame && canRenderLiveHtml(state.liveBuffer)) els.frame.srcdoc = composeSrcdoc(state.liveBuffer, { live: true });
+    if (shouldRenderFrame) scheduleLiveFrameRender();
   });
 }
 
@@ -144,6 +173,12 @@ function renderFinalPage(page) {
   updateActiveTabTitle(page.title || 'Generated page');
   renderTabs({ activate: switchTab, close: closeExistingTab });
   renderSource(els.liveSource, els.sourceStatus, state.liveBuffer);
+  if (liveFrameTimer) {
+    window.clearTimeout(liveFrameTimer);
+    liveFrameTimer = 0;
+  }
+  els.frame.onload = null;
+  liveFrameReady = false;
   els.frame.srcdoc = composeSrcdoc(page.html || state.liveBuffer || '');
 }
 
@@ -252,6 +287,8 @@ function renderActiveTab() {
   updateOmniboxState();
   renderSource(els.liveSource, els.sourceStatus, state.liveBuffer);
   if (state.currentHtml) {
+    els.frame.onload = null;
+    liveFrameReady = false;
     els.frame.srcdoc = composeSrcdoc(state.currentHtml);
   } else {
     navigate('synthetic://home', { push: false, index: 0 });
