@@ -16,13 +16,13 @@ export async function readNdjsonStream(response, onEvent) {
       buffer += decoder.decode(value, { stream: true });
       let newline;
       while ((newline = buffer.indexOf('\n')) !== -1) {
-        const line = buffer.slice(0, newline).trim();
+        const line = buffer.slice(0, newline);
         buffer = buffer.slice(newline + 1);
-        if (line) onEvent(JSON.parse(line));
+        if (line && line !== '\r') onEvent(JSON.parse(line));
       }
     }
-    const last = buffer.trim();
-    if (last) onEvent(JSON.parse(last));
+    buffer += decoder.decode();
+    if (buffer && buffer !== '\r') onEvent(JSON.parse(buffer));
   } finally {
     reader.releaseLock();
   }
