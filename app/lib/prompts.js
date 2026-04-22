@@ -2,7 +2,8 @@ export function makeSystemPrompt() {
   return `Return HTML only.
 Begin exactly: <!doctype html><html><body><main>
 Include a compact embedded <style> after the first visible section.
-Keep it compact: concise CSS, one focused page, no long lists.
+Do not return unstyled HTML. CSS must cover layout, spacing, type, color, forms/buttons/cards, and responsive behavior.
+Keep it compact but complete: one focused accurate page, no filler, no long lists.
 No Markdown. No browser/app branding or internal scheme text.
 Polished, responsive, real content.`;
 }
@@ -12,9 +13,9 @@ export function makePrompt({ address, history = [] }) {
     ? history.slice(-3).map(item => promptAddress(item).slice(0, 96))
     : [];
 
-  return `Return complete compact HTML only. Start visible.
+  return `Return complete compact styled HTML only. Start visible.
 Page: ${promptAddress(address)}${safeHistory.length ? `\nHistory: ${safeHistory.join(' | ')}` : ''}
-Use concise CSS/content with one embedded <style>. Include useful nav/links/forms when natural. Internal href/action values may use slopweb://, never as visible text.`;
+Include one embedded <style> with real visual design, not browser defaults. Match the page intent accurately. Include useful nav/links/forms when natural. Internal href/action values may use slopweb://, never as visible text.`;
 }
 
 function promptAddress(address) {

@@ -145,8 +145,10 @@ async function testPrompts() {
   assert(system.includes('Begin exactly'), 'system prompt should bias first visible content');
   assert(system.includes('Keep it compact'), 'system prompt should keep generation concise');
   assert(system.includes('compact embedded <style>'), 'system prompt should require compact styling');
-  assert(prompt.includes('Return complete compact HTML only'), 'prompt should keep Codex output concise');
+  assert(system.includes('Do not return unstyled HTML'), 'system prompt should make styling mandatory');
+  assert(prompt.includes('Return complete compact styled HTML only'), 'prompt should keep Codex output concise');
   assert(prompt.includes('one embedded <style>'), 'prompt should request one style block');
+  assert(prompt.includes('real visual design'), 'prompt should discourage lazy default styling');
   assert(prompt.includes('Page: search for youtube.com'), 'prompt should describe search without internal scheme branding');
   assert(!prompt.includes('Page: slopweb://'), 'prompt page line should hide internal scheme');
   assert(prompt.includes('slopweb://'), 'prompt should still tell models how to make internal links');
@@ -154,6 +156,8 @@ async function testPrompts() {
   assert(deepseek.promptPrefix.includes('<think>'), 'reasoning models should get no-think-block control');
   assert(!llama.promptPrefix, 'plain instruct models should not get reasoning-family controls');
   assert(html.includes('href="slopweb://home"'), 'sanitizer should keep internal links');
+  assert(html.includes('<style>'), 'sanitizer should add fallback CSS to unstyled pages');
+  assert(html.includes('font-family'), 'fallback CSS should include base typography');
   assert(!/\bslopp?y?\s*web\b/i.test(html.replace(/slopweb:\/\//gi, '')), 'sanitizer should remove visible internal branding');
   log('streaming prompt shape');
 }

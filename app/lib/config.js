@@ -22,7 +22,7 @@ export const config = Object.freeze({
   get aiSdkBaseUrl() { return stripWrappingQuotes(process.env.SLOPWEB_BASE_URL || process.env.AI_SDK_BASE_URL || ''); },
   get generatedPagesDir() { return GENERATED_PAGES_DIR; },
   get aiSdkTimeoutMs() { return Number(process.env.AI_SDK_TIMEOUT_MS || process.env.CODEX_TIMEOUT_MS || 120_000); },
-  get maxOutputTokens() { return Number(process.env.SLOPWEB_MAX_OUTPUT_TOKENS || 2_200); },
+  get maxOutputTokens() { return Number(process.env.SLOPWEB_MAX_OUTPUT_TOKENS || 3_000); },
   get aiSdkTemperature() { return Number(process.env.SLOPWEB_TEMPERATURE || 0.25); }
 });
 
