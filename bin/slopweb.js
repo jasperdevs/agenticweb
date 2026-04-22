@@ -34,6 +34,9 @@ const PALETTE = {
 };
 const BANNER_SUBTITLE = 'A new web where AI generates every page.';
 const LOADING_SPINNER = ['◐', '◓', '◑', '◒', '◌'];
+const LOADING_SPINNER_MS = 55;
+const FRAME_PAD_X = 3;
+const FRAME_PAD_Y = 1;
 let interactiveScreenActive = false;
 let lastInteractiveFrame = [];
 let loadingSpinnerTimer = null;
@@ -418,12 +421,26 @@ async function startDetectedRuntime(model) {
   throw new Error(`${model.providerName} model is installed, but Slopweb does not know how to start this runtime yet.`);
 }
 
+function paddedInteractiveFrame(text, cursorPosition = null) {
+  if (!process.stdout.isTTY) return { text, cursor: cursorPosition };
+  const leftPad = ' '.repeat(FRAME_PAD_X);
+  const topPad = Array(FRAME_PAD_Y).fill('');
+  const lines = String(text).split('\n').map(line => `${leftPad}${line}`);
+  return {
+    text: [...topPad, ...lines].join('\n'),
+    cursor: cursorPosition
+      ? { row: cursorPosition.row + FRAME_PAD_Y, column: cursorPosition.column + FRAME_PAD_X }
+      : null
+  };
+}
+
 function writeInteractiveFrame(text, cursorPosition = null) {
   if (!process.stdout.isTTY) {
     process.stdout.write(`${text}\n`);
     return;
   }
-  const nextLines = String(text).split('\n');
+  const frame = paddedInteractiveFrame(text, cursorPosition);
+  const nextLines = String(frame.text).split('\n');
   const chunks = ['\x1b[?25l'];
   const maxLines = Math.max(lastInteractiveFrame.length, nextLines.length);
   for (let index = 0; index < maxLines; index += 1) {
@@ -436,7 +453,7 @@ function writeInteractiveFrame(text, cursorPosition = null) {
   }
   lastInteractiveFrame = nextLines;
   process.stdout.write(chunks.join(''));
-  if (cursorPosition) process.stdout.write(`\x1b[${cursorPosition.row};${cursorPosition.column}H\x1b[?25h`);
+  if (frame.cursor) process.stdout.write(`\x1b[${frame.cursor.row};${frame.cursor.column}H\x1b[?25h`);
 }
 
 function enterInteractiveScreen() {
@@ -466,7 +483,7 @@ function renderInputBox(value = '') {
 }
 
 function inputBoxWidth() {
-  return Math.min(78, Math.max(42, Number(process.stdout.columns || 80) - 6));
+  return Math.min(78, Math.max(42, Number(process.stdout.columns || 80) - FRAME_PAD_X - 6));
 }
 
 function inputCursorColumn(value = '') {
@@ -663,7 +680,7 @@ function renderLaunchLoading(message = 'Scanning local models') {
     loadingSpinnerIndex += 1;
     const next = loadingFrame();
     writeInteractiveFrame(next.text, next.cursor);
-  }, 120);
+  }, LOADING_SPINNER_MS);
   loadingSpinnerTimer.unref?.();
 }
 
